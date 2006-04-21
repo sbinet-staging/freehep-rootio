@@ -25,7 +25,7 @@
     <dependency>
       <groupId>org.freehep</groupId>
       <artifactId>jas-plotter</artifactId>
-      <version>06102005</version>
+      <version>01052006</version>
     </dependency>
   </dependencies>
   <build>
