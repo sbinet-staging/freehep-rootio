@@ -23,9 +23,12 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<systemProperties>
-						<org.freehep.testData>
-							${settings.localRepository}/hep/testdata/root/pawdemo/1.0/pawdemo-1.0.root
-						</org.freehep.testData>
+						<property>
+							<name>org.freehep.rootTestDataFile</name>
+							<value>
+								${localRepository}/hep/testdata/root/pawdemo/1.0/pawdemo-1.0.root
+							</value>
+						</property>
 					</systemProperties>
 				</configuration>
 			</plugin>
