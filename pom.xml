@@ -7,7 +7,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.freehep</groupId>
 	<artifactId>freehep-rootio</artifactId>
-	<version>2.0</version>
+	<version>2.0.1-SNAPSHOT</version>
 	<name>FreeHEP ROOT IO</name>
 	<description>FreeHEP ROOT IO Reader and Writer</description>
 	<repositories>
