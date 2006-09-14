@@ -296,7 +296,7 @@ import java.util.*;
 /**
  * An example of how to read events from a Root file.
  * @author  tonyj
- * @version $Id: EventTest.java,v 1.1 2001/05/29 23:58:10 tonyj Exp $
+ * @version $Id$
  */
 public class EventTest 
 {
@@ -366,4 +366,4 @@ dramatically).
 
 ===
 
-	{{{mailto:tonyj@slac.stanford.edu}Tony Johnson}} - Version: $Id: index.shtml,v1.11 2001/06/11 21:32:53 tonyj Exp $
+	{{{mailto:tonyj@slac.stanford.edu}Tony Johnson}} - Version: $Id$

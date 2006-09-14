@@ -6,7 +6,7 @@ import java.util.*;
 /**
  * An example of how to read events from a Root file.
  * @author  tonyj
- * @version $Id: EventTest.java,v 1.1 2001/05/29 23:58:10 tonyj Exp $
+ * @version $Id$
  */
 public class EventTest 
 {
