@@ -1,8 +1,4 @@
-
-
 package hep.io.root.daemon.xrootd;
-
-import hep.io.root.daemon.DaemonInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -10,15 +6,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class XrootdProtocol
+class XrootdProtocol implements Runnable
 {
    public final static int defaultPort = 1094;
    
@@ -80,9 +78,6 @@ public class XrootdProtocol
    final static int kXR_useruser = 0;
    final static int kXR_useradmin = 1;
    
-   private int bufferSize = 8096;
-   private static int MAXGETSIZE = -1;
-   
    private static Logger logger = Logger.getLogger("hep.io.root.daemon");
    static
    {
@@ -97,14 +92,20 @@ public class XrootdProtocol
    private Socket socket;
    private Message message;
    private Response response;
+   private Map/* <Short,ResponseHandler> */ responseMap = new HashMap /*<Short,ResponseHandler>*/ ();
    
    private ByteArrayOutputStream bos = new ByteArrayOutputStream(20);
    private DataOutputStream out = new DataOutputStream(bos);
+   private BitSet handles = new BitSet();
    
    /**
-    * @param args the command line arguments
+    * Low level implementation of the Xrootd protocol.
+    * One XrootdProtocol object may be shared by any number of clients, who
+    * may call any of the methods simultaneously on different threads.
+    * @param host The host to connect to
+    * @param port The port to connect to
     */
-   public XrootdProtocol(String host, int port) throws IOException
+   XrootdProtocol(String host, int port, String userName) throws IOException
    {
       if (port == -1) port = defaultPort;
       Socket s = new Socket(host,port);
@@ -125,37 +126,153 @@ public class XrootdProtocol
       int mode = response.getInputStream().readInt();
       
       message = new Message(s.getOutputStream());
+      
+      bos.reset();
+      out.writeInt(12345);
+      byte[] user = userName.getBytes();
+      for (int i=0; i<8; i++) out.writeByte(i<user.length ? user[i] : 0);
+      out.writeByte(0);
+      out.writeByte(0);
+      out.writeByte(0);
+      out.writeByte(kXR_useruser);
+      out.flush();
+      sendMessage(new Short((short)0),kXR_login,bos.toByteArray());
+      response.read();
+      
+      // Start a thread which will listen for future responses
+      // TODO: It would be better to use a single thread listening on all 
+      // open sockets
+      Thread t = new Thread(this,"XrootdReader-"+host+":"+port);
+      t.setDaemon(true);
+      t.start();
+   }
+   public void run()
+   {
+      for (;;)
+      {
+         try
+         {
+            response.read();
+            int status = response.getStatus();
+            
+            if (status == kXR_wait)
+            {
+               DataInputStream in = response.getInputStream();
+               int seconds = in.readInt();
+               byte[] message = new byte[response.getLength()-4];
+               in.readFully(message);
+               System.out.println("Xrootd wait: "+new String(message,0,message.length)+" seconds="+seconds);
+               Short handle = response.getHandle();
+               ResponseHandler handler;
+               synchronized (responseMap)
+               {
+                  handler = (ResponseHandler) responseMap.get(handle);
+               }
+               // TODO: What if handler == null?
+               handler.handleWait(seconds);
+            }
+            else if (status == kXR_redirect)
+            {
+               DataInputStream in = response.getInputStream();
+               int port = in.readInt();
+               byte[] message = new byte[response.getLength()-4];
+               in.readFully(message);
+               String host = new String(message,0,message.length);
+               Short handle = response.getHandle();
+               ResponseHandler handler;
+               synchronized (responseMap)
+               {
+                  handler = (ResponseHandler) responseMap.get(handle);
+               }
+               // TODO: What if handler == null?
+               handler.handleRedirect(host,port);
+            }
+            else if (status == kXR_ok || status == kXR_oksofar)
+            {
+               Short handle = response.getHandle();
+               ResponseHandler handler;
+               synchronized (responseMap)
+               {
+                  handler = (ResponseHandler) responseMap.get(handle);
+               }
+               // TODO: What if handler == null?
+               handler.handleResponse(response);
+            }
+            else
+            {
+               throw new IOException("Xrootd: Unimplemented status received: "+status);
+            }
+         }
+         catch (IOException x)
+         {
+            // TODO: we need to report errors to anyone waiting for a response
+            // and die.
+            x.printStackTrace();
+         }
+      }
+   }
+   Short allocateHandle()
+   {
+      synchronized (handles)
+      {
+         int result = handles.nextClearBit(0);
+         handles.set(result);
+         return new Short((short) result);
+      }
+   }
+   void freeHandle(Short handle)
+   {
+      synchronized (handles)
+      {
+         handles.clear(handle.intValue());
+      }
+   }
+   void registerResponseHandler(Short handle, ResponseHandler handler)
+   {
+      synchronized (responseMap)
+      {
+         responseMap.put(handle,handler);
+      }
+   }
+   void deregisterResponseHandler(Short handle)
+   {
+      synchronized (responseMap)
+      {
+         responseMap.remove(handle);
+      }
+   }
+   void sendMessage(Short handle, int message) throws IOException
+   {
+      sendMessage(handle,message,null);
+   }
+   void sendMessage(Short handle, int message, byte[] extra) throws IOException
+   {
+      sendMessage(handle,message,extra,null);
+   }
+   void sendMessage(Short handle,int message, byte[] extra, String string) throws IOException
+   {
+      this.message.send(handle,message,extra,string);
    }
    
-   public int getBufferSize()
-   {
-      return this.bufferSize;
-   }
-   
-   public void setBufferSize(int bufferSize)
-   {
-      this.bufferSize = bufferSize;
-   }
    public static void main(String[] args) throws IOException
    {
-      XrootdProtocol xrootd = new XrootdProtocol("glast01.slac.stanford.edu",1094);
-      xrootd.login("tonyj");
-      xrootd.ping();
+      XrootdHandle handle = new XrootdHandle("glast01.slac.stanford.edu",1094,"tonyj");
+      handle.ping();
       String dir = "/nfs/farm/g/glast/u07/mcenery/systests/GlastRelease/v6r2p1/VerticalGamma100MeV/linux/";
-      List files = xrootd.dirList(dir);
+      List files = handle.dirList(dir);
       for (Iterator i = files.iterator(); i.hasNext();)
       {
          System.out.println(i.next());
       }
-      System.out.println(Arrays.asList(xrootd.stat(dir+"VerticalGamma100MeV_Histos.root")));
-      int fh = xrootd.open(dir+"VerticalGamma100MeV_Histos.root",0,kXR_open_read);
+      System.out.println(Arrays.asList(handle.stat(dir+"VerticalGamma100MeV_Histos.root")));
+      int fh = handle.open(dir+"VerticalGamma100MeV_Histos.root",0,kXR_open_read);
       System.out.println("fh="+fh);
       byte[] result = new byte[300000];
-      int l = xrootd.read(fh,result,1024);
+      int l = handle.read(fh,result,1024);
       System.out.println("l="+result.length);
-      xrootd.close(fh);
+      handle.close(fh);
       
-      InputStream in = xrootd.openStream(dir+"VerticalGamma100MeV_Histos.root",0,kXR_open_read);
+      InputStream in = handle.openStream(dir+"VerticalGamma100MeV_Histos.root",0,kXR_open_read);
       int p = 0;
       for (;;)
       {
@@ -167,145 +284,24 @@ public class XrootdProtocol
       System.out.println("Read "+p+" bytes");
       
    }
-   public List dirList(String path) throws IOException
-   {
-      message.send(kXR_dirlist,null,path);
-      List result = new ArrayList();
-      
-      for (;;)
-      {
-         response.read();
-         int rlen = response.getLength();
-         DataInputStream in = response.getInputStream();
-         
-         byte[] data = new byte[rlen];
-         in.readFully(data);
-         String files = new String(data);
-
-         int pos = 0;
-         for (int i=0; i<files.length(); i++)
-         {
-            char c = files.charAt(i);
-            if (c =='\n' || c == '\0' )
-            {
-               result.add(files.substring(pos,i));
-               if (c == '\0') break;
-               pos = i+1;
-            }
-         }
-         if (response.getStatus() != kXR_oksofar) break;
-      }
-      
-      return result;
-   }
-   public void login(String username) throws IOException
-   {
-      bos.reset();
-      out.writeInt(12345);
-      byte[] user = username.getBytes();
-      for (int i=0; i<8; i++) out.writeByte(i<user.length ? user[i] : 0);
-      out.writeByte(0);
-      out.writeByte(0);
-      out.writeByte(0);
-      out.writeByte(kXR_useruser);
-      out.flush();
-      message.send(kXR_login,bos.toByteArray());
-      response.read();
-   }
-   public void ping() throws IOException
-   {
-      message.send(kXR_ping);
-      response.read();
-   }
-   public String[] stat(String path) throws IOException
-   {
-      message.send(kXR_stat,null,path);
-      response.read();
-      int rlen = response.getLength();
-      byte[] data = new byte[rlen];
-      response.getInputStream().readFully(data);
-      return new String(data,0,rlen-1).split(" +");
-   }
-   public int open(String path, int mode, int options) throws IOException
-   {
-      bos.reset();
-      out.writeShort(mode);
-      out.writeShort(options);
-      for (int i=0; i<12; i++) out.writeByte(0);
-      out.flush();
-      message.send(kXR_open,bos.toByteArray(),path);
-      response.read();
-      int rlen = response.getLength();
-      int handle = response.getInputStream().readInt();
-      for (int i=4; i<rlen; i++) response.getInputStream().readByte();
-      return handle;
-   }
-   public void close(int handle) throws IOException
-   {
-      bos.reset();
-      out.writeInt(handle);
-      for (int i=0; i<12; i++) out.writeByte(0);
-      out.flush();
-      message.send(kXR_close,bos.toByteArray());
-      response.read();
-   }
-   public int read(int handle, byte[] buffer, long fileOffset) throws IOException
-   {
-      return read(handle,buffer,fileOffset,0,buffer.length);
-   }
-   public int read(int handle, byte[] buffer, long fileOffset, int bufOffset, int size) throws IOException
-   {
-      bos.reset();
-      out.writeInt(handle);
-      out.writeLong(fileOffset);
-      out.writeInt(size);
-      out.flush();
-      message.send(kXR_read,bos.toByteArray());
-      int l = 0;
-      for (;;)
-      {
-         response.read();
-         int dlen = response.getLength();
-         response.getInputStream().readFully(buffer,bufOffset+l,dlen);
-         l += dlen;
-         if (response.getStatus() != kXR_oksofar) break;
-      }
-      return l;
-   }
-   public DaemonInputStream openStream(String path, int mode, int options) throws IOException
-   {
-      int fh = open(path,mode,options);
-      return new RootStream(fh);
-   }
    
    private static class Message
    {
       private OutputStream data;
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
       DataOutputStream out = new DataOutputStream(bos);
-      int c1 = '9';
-      int c2 = '9';
       
       Message(OutputStream data)
       {
          this.data = data;
          
       }
-      void send(int message) throws IOException
-      {
-         send(message,null);
-      }
-      void send(int message, byte[] extra) throws IOException
-      {
-         send(message,extra,null);
-      }
       
-      void send(int message, byte[] extra, String string) throws IOException
+      synchronized void send(Short handle, int message, byte[] extra, String string) throws IOException
       {
          logger.fine("->"+message);
          bos.reset();
-         out.writeByte(c1);
-         out.writeByte(c2);
+         out.writeShort(handle.shortValue());
          out.writeShort(message);
          for (int i=0; i<16; i++) out.writeByte(extra == null ? 0 : extra[i]);
          if (string == null)
@@ -322,21 +318,20 @@ public class XrootdProtocol
          bos.writeTo(data);
       }
    }
-   private static class Response
+   static class Response
    {
       private DataInputStream in;
-      private int c1, c2;
+      private Short handle;
       private int status;
       private int dataLength;
       private byte[] data;
-      Response(DataInputStream in)
+      private Response(DataInputStream in)
       {
          this.in = in;
       }
-      int read() throws IOException
+      private int read() throws IOException
       {
-         c1 = in.readUnsignedByte();
-         c2 = in.readUnsignedByte();
+         handle = new Short(in.readShort());
          status = in.readUnsignedShort();
          dataLength = in.readInt();
          if (status == kXR_error)
@@ -346,11 +341,7 @@ public class XrootdProtocol
             in.readFully(message);
             throw new IOException("Xrootd error "+rc+": "+new String(message,0,message.length-1));
          }
-         else if (status != kXR_ok && status != kXR_oksofar)
-         {
-            throw new IOException("Xrootd: Unimplemented status recieved: "+status);
-         }
-         logger.fine("<-"+c1+" "+c2+" "+status+" "+dataLength);
+         logger.fine("<-"+handle+" "+status+" "+dataLength);
          return status;
       }
       int getStatus()
@@ -361,97 +352,13 @@ public class XrootdProtocol
       {
          return dataLength;
       }
+      Short getHandle()
+      {
+         return handle;
+      }
       DataInputStream getInputStream()
       {
          return in;
-      }
-   }
-   private class RootStream extends DaemonInputStream
-   {
-      private byte[] buffer = new byte[bufferSize];
-      private int bpos = 0;
-      private int blen = 0;
-      private int fh;
-      
-      RootStream(int fh)
-      {
-         this.fh = fh;
-      }
-      public int read() throws IOException
-      {
-         if (bpos >= blen)
-         {
-            if (!fillBuffer()) return -1;
-         }
-         int i = buffer[bpos++];
-         if (i < 0) i += 256;
-         return i;
-      }
-      
-      public void close() throws IOException
-      {
-         XrootdProtocol.this.close(fh);
-      }
-      
-      public int read(byte[] values, int offset, int size) throws IOException
-      {
-         if (bpos >= blen)
-         {
-            long position = this.position+bpos;
-            int n = size;
-            if (MAXGETSIZE > 0 && n > MAXGETSIZE) n = MAXGETSIZE;
-            int l = XrootdProtocol.this.read(fh,values,position,offset,n);
-            if (l > 0) this.position += l;
-            else l = -1;
-            return l;
-         }
-         else
-         {
-            int l = Math.min(size,blen-bpos);
-            System.arraycopy(buffer, bpos, values, offset, l);
-            bpos += l;
-            return l;
-         }
-      }
-      
-      public long skip(long skip) throws IOException
-      {
-         setPosition(getPosition()+skip);
-         return skip;
-      }
-      
-      public void setPosition(long pos)
-      {
-         if (pos>position && pos<position+blen)
-         {
-            bpos = (int) (pos-position);
-         }
-         else
-         {
-            blen = 0;
-            bpos = 0;
-            super.setPosition(pos);
-         }
-      }
-      
-      public int available() throws IOException
-      {
-         return blen - bpos;
-      }
-      
-      private boolean fillBuffer() throws IOException
-      {
-         position += bpos;
-         bpos = 0;
-         int n = buffer.length;
-         if (MAXGETSIZE > 0 && n > MAXGETSIZE) n = MAXGETSIZE;
-         blen = XrootdProtocol.this.read(fh,buffer,position,0,n);
-         return true;
-      }
-      
-      public long getPosition()
-      {
-         return position + bpos;
       }
    }
 }

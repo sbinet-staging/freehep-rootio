@@ -75,10 +75,10 @@ public class XrootdURLConnection extends URLConnection
       if (password == null || username == null) throw new IOException("Authorization Required");
             
       logger.fine("Opening rootd connection to: "+url);
-      XrootdProtocol rp = new XrootdProtocol(url.getHost(),url.getPort());
-      rp.login(username);
+      XrootdHandle rp = new XrootdHandle(url.getHost(),url.getPort(),username);
       if (bufferSize != 0) rp.setBufferSize(bufferSize);
 
+      // ToDo: This could be delayed until needed.
       String[] fstat = rp.stat(url.getFile());
       fSize = Long.parseLong(fstat[1]);
       date = Long.parseLong(fstat[3])*1000;
