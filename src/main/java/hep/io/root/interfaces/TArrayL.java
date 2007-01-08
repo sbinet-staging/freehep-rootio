@@ -5,11 +5,11 @@
  */
 package hep.io.root.interfaces;
 
-public interface TArrayD extends hep.io.root.RootObject, TArray
+public interface TArrayL extends hep.io.root.RootObject, TArray
 {
    public final static int rootIOVersion = 1;
    public final static int rootCheckSum = 1191246382;
 
-   /** [fN] Array of fN doubles */
-   double[] getArray();
+   /** [fN] Array of fN longs */
+   long[] getArray();
 }
