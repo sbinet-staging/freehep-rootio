@@ -1,18 +1,20 @@
 package hep.io.root.daemon.xrootd;
 
+import java.net.InetAddress;
+
 /**
- * A connection may be shared by multiple users with the equivalent ConnectionDescriptor
+ * A connection may be shared by multiple sessions if they have the equivalent ConnectionDescriptor
  * @author tonyj
  */
 class XrootdConnectionDescriptor
 {
-   private String host;
-   private int port;
    private String userName;
+   private int port;
+   private InetAddress address;
 
-   XrootdConnectionDescriptor(String host, int port, String userName)
+   XrootdConnectionDescriptor(InetAddress address, int port, String userName)
    {
-      this.host = host.intern();
+      this.address = address;
       this.port = port;
       this.userName = userName.intern();
    }
@@ -22,7 +24,7 @@ class XrootdConnectionDescriptor
       if (obj instanceof XrootdConnectionDescriptor)
       {
          XrootdConnectionDescriptor that = (XrootdConnectionDescriptor) obj;
-         return this.host == that.host && 
+         return this.address.equals(that.address) && 
                 this.port == that.port && 
                 this.userName == that.userName;
       }
@@ -31,6 +33,6 @@ class XrootdConnectionDescriptor
 
     public int hashCode() 
     {
-      return host.hashCode() + port + userName.hashCode();
+      return address.hashCode() + port + userName.hashCode();
     }
 }

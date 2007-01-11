@@ -16,9 +16,9 @@ class XrootdInputStream extends DaemonInputStream
    private int bpos = 0;
    private int blen = 0;
    private int fh;
-   private XrootdHandle handle;
+   private XrootdSession handle;
    
-   XrootdInputStream(XrootdHandle handle, int fh, int bufferSize)
+   XrootdInputStream(XrootdSession handle, int fh, int bufferSize)
    {
       this.fh = fh;
       this.handle = handle;

@@ -28,6 +28,11 @@ public class XrootdURLConnection extends URLConnection
    private long date;
    private long fSize;
    private static Logger logger = Logger.getLogger("hep.io.root.daemon");
+   
+   public static final String XROOT_AUTHORIZATION_SCHEME = "scheme";
+   public static final String XROOT_AUTHORIZATION_USER = "user";   
+   public static final String XROOT_AUTHORIZATION_PASSWORD = "password";   
+   public static final String XROOT_BUFFER_SIZE = "bufferSize";
 
    XrootdURLConnection(URL url)
    {
@@ -75,7 +80,7 @@ public class XrootdURLConnection extends URLConnection
       if (password == null || username == null) throw new IOException("Authorization Required");
             
       logger.fine("Opening rootd connection to: "+url);
-      XrootdHandle rp = new XrootdHandle(url.getHost(),url.getPort(),username);
+      XrootdSession rp = new XrootdSession(url.getHost(),url.getPort(),username);
       if (bufferSize != 0) rp.setBufferSize(bufferSize);
 
       // ToDo: This could be delayed until needed.
@@ -105,9 +110,9 @@ public class XrootdURLConnection extends URLConnection
    
    public void setRequestProperty(String key, String value)
    {
-      if      (key.equalsIgnoreCase("user"))         username = value;
-      else if (key.equalsIgnoreCase("password"))     password = value;
-      else if (key.equalsIgnoreCase("scheme"))           auth = value;
-      else if (key.equalsIgnoreCase("bufferSize")) bufferSize = Integer.parseInt(value);
+      if      (key.equalsIgnoreCase(XROOT_AUTHORIZATION_USER))     username = value;
+      else if (key.equalsIgnoreCase(XROOT_AUTHORIZATION_PASSWORD)) password = value;
+      else if (key.equalsIgnoreCase(XROOT_AUTHORIZATION_SCHEME ))  auth = value;
+      else if (key.equalsIgnoreCase(XROOT_BUFFER_SIZE)) bufferSize = Integer.parseInt(value);
    }  
 }

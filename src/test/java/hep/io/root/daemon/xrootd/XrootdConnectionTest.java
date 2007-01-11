@@ -1,0 +1,136 @@
+package hep.io.root.daemon.xrootd;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import junit.framework.*;
+import java.net.URL;
+import java.net.URLConnection;
+
+/**
+ *
+ * @author tonyj
+ */
+public class XrootdConnectionTest extends TestCase
+{
+   public XrootdConnectionTest(String testName)
+   {
+      super(testName);
+   }
+   
+   public void testConnection() throws MalformedURLException, IOException
+   {
+      int expectedLength = 353216;
+      URL url = new URL(null,"xroot://glast-xrootd01.slac.stanford.edu/u/gl/glast/xrootd/testdata/pawdemo.root", new XrootdStreamHandler());
+      URLConnection conn = url.openConnection();
+      conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
+      InputStream in = conn.getInputStream();
+      assertEquals(expectedLength,conn.getContentLength());
+      try
+      {
+         int size = 0;
+         byte[] buffer = new byte[8096];
+         for (;;)
+         {
+            int l = in.read(buffer);
+            if (l<0) break;
+            size += l;
+         }
+         assertEquals(expectedLength,size);
+      }
+      finally
+      {
+         in.close();
+      }
+   }
+   public void testRedirect()  throws MalformedURLException, IOException
+   {
+      int expectedLength = 2003749;
+      // Fixme: This currently fails outside SLAC. Maybe we can teach the redirector about the test data
+      URL url = new URL(null,"xroot://glast-rdr.slac.stanford.edu/glast/mc/DC2/ChickenLittle-GR-v7r3p24-2/000/126/ChickenLittle-GR-v7r3p24-2_000126_digi_DIGI.root", new XrootdStreamHandler());
+      URLConnection conn = url.openConnection();
+      conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
+      InputStream in = conn.getInputStream();
+      assertEquals(expectedLength,conn.getContentLength());
+      try
+      {
+         int size = 0;
+         byte[] buffer = new byte[8096];
+         for (;;)
+         {
+            int l = in.read(buffer);
+            if (l<0) break;
+            size += l;
+         }
+         assertEquals(expectedLength,size);
+      }
+      finally
+      {
+         in.close();
+      }
+   }
+   public void testError() throws MalformedURLException, IOException
+   {
+      
+      URL url = new URL(null,"xroot://glast-xrootd01.slac.stanford.edu/NonExisTantFile", new XrootdStreamHandler());
+      URLConnection conn = url.openConnection();
+      conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
+      try
+      {
+         InputStream in = conn.getInputStream();
+         fail("Should have thrown an exception");
+      }
+      catch (IOException x)
+      {
+         // OK, expected
+      }
+   }
+   public void testError2() throws MalformedURLException, IOException
+   {
+      
+      URL url = new URL(null,"xroot://glast-xrootd01.slac.stanford.edu/u/gl/glast/xrootd/testdata/PAWdemo.root", new XrootdStreamHandler());
+      URLConnection conn = url.openConnection();
+      conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
+      try
+      {
+         InputStream in = conn.getInputStream();
+         fail("Should have thrown an exception");
+      }
+      catch (IOException x)
+      {
+         // OK, expected
+      }
+   }
+   public void testError3() throws MalformedURLException, IOException
+   {
+      // Host does not exist, but doesn't run rootd
+      URL url = new URL(null,"xroot://badHost.slac.stanford.edu/u/gl/glast/xrootd/testdata/PAWdemo.root", new XrootdStreamHandler());
+      URLConnection conn = url.openConnection();
+      conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
+      try
+      {
+         InputStream in = conn.getInputStream();
+         fail("Should have thrown an exception");
+      }
+      catch (IOException x)
+      {
+         // OK, expected
+      }
+   }
+   public void testError4() throws MalformedURLException, IOException
+   {
+      // Host exists, but doesn't run rootd
+      URL url = new URL(null,"xroot://www.slac.stanford.edu/u/gl/glast/xrootd/testdata/PAWdemo.root", new XrootdStreamHandler());
+      URLConnection conn = url.openConnection();
+      conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
+      try
+      {
+         InputStream in = conn.getInputStream();
+         fail("Should have thrown an exception");
+      }
+      catch (IOException x)
+      {
+         // OK, expected
+      }
+   }
+}

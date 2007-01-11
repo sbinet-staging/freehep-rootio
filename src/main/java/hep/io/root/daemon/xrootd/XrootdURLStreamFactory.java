@@ -8,7 +8,7 @@ import java.net.URLStreamHandlerFactory;
  * <p>
  * Usage:
  * <pre>
- *    URL.setURLStreamHandlerFactory(new RootURLStreamFactory());
+ *    URL.setURLStreamHandlerFactory(new XrootdURLStreamFactory());
       URL url = new URL("root://root.cern.ch/demo.root");
  * </pre>
  * @author Tony Johnson
