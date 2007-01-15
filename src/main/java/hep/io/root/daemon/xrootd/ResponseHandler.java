@@ -25,4 +25,9 @@ abstract class ResponseHandler
    }
    abstract void sendMessage() throws IOException;
    abstract void handleResponse(Multiplexor.Response response) throws IOException;
+
+   void handleSocketError(IOException x)
+   {
+      handleError(x);
+   }
 }

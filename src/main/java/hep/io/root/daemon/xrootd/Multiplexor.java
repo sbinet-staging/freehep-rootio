@@ -6,8 +6,11 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.TimerTask;
 import java.util.logging.ConsoleHandler;
@@ -34,6 +37,7 @@ class Multiplexor implements Runnable
    private static Timer timer = new Timer("XrootdReader-timer",true);
    private static Map/*<ConnectionDescriptor,Multiplexor>*/ connectionMap = new HashMap/*<ConnectionDescriptor,Multiplexor>*/();
    
+   private boolean socketClosed = false;
    private Socket socket;
    private Thread thread;
    private ConnectionDescriptor descriptor;
@@ -96,7 +100,7 @@ class Multiplexor implements Runnable
             {
                public void run()
                {
-                  timeout();
+                  close();
                }
             };
             timer.schedule(idleTimer,MAX_IDLE);
@@ -104,7 +108,7 @@ class Multiplexor implements Runnable
       }
       logger.info(descriptor+" Free session "+handle);
    }
-   void timeout()
+   private void close()
    {
       synchronized (connectionMap)
       {
@@ -115,17 +119,10 @@ class Multiplexor implements Runnable
          connectionMap.remove(this.descriptor);
       }
       logger.info(descriptor+" Closing connection");
-//      try
-//      {
-//         thread.interrupt();
-//         thread.join();
-//      }
-//      catch (InterruptedException x)
-//      {
-//         logger.log(Level.WARNING,descriptor+" Error while shuting down thread",x);
-//      }
+      
       try
       {
+         socketClosed = true;
          socket.close();
       }
       catch (IOException x)
@@ -154,12 +151,11 @@ class Multiplexor implements Runnable
          bos.reset();
          out.writeInt(0);
          out.writeInt(0);
-         out.writeInt(0);
-         out.writeInt(4);
+         out.writeInt(0);         out.writeInt(4);
          out.writeInt(2012);
          out.flush();
          bos.writeTo(socket.getOutputStream());
-
+         
          DataInputStream in = new DataInputStream(socket.getInputStream());
          int check = in.readInt();
          if (check == 8) throw new IOException("rootd protocol not supported");
@@ -168,11 +164,11 @@ class Multiplexor implements Runnable
          if (rlen != 8) throw new IOException("Unexpected initial handshake length");
          int protocol = in.readInt();
          int mode = in.readInt();
-
+         
          logger.info(desc+" Logging in protocol="+protocol+" mode="+mode);
-
+         
          message = new Message(socket.getOutputStream());
-
+         
          bos.reset();
          out.writeInt(12345);
          byte[] user = desc.getUserName().getBytes();
@@ -185,7 +181,7 @@ class Multiplexor implements Runnable
          sendMessage(new Short((short)0),XrootdProtocol.kXR_login,bos.toByteArray());
          response = new Response(in);
          response.read();
-
+         
          // Start a thread which will listen for future responses
          // TODO: It would be better to use a single thread listening on all
          // open sockets
@@ -244,8 +240,7 @@ class Multiplexor implements Runnable
                      }
                      catch (IOException x)
                      {
-                        //ToDo: Fixme
-                        x.printStackTrace();
+                        handleSocketException(x);
                      }
                   }
                };
@@ -272,9 +267,25 @@ class Multiplexor implements Runnable
       }
       catch (IOException x)
       {
-         // We should only get here if there was a real IO error on the socket.
-         // ToDo: Something better.
-         x.printStackTrace();
+         handleSocketException(x);
+      }
+   }
+   private void handleSocketException(IOException x)
+   {
+      if (!socketClosed)
+      {
+         // prevent any new requests
+         socketClosed = true;
+         logger.log(Level.WARNING,"Unexpected IO exception on socket",x);
+         // Notify anyone listening for a response that we are dead
+         List waiting = new ArrayList(responseMap.values());
+         for (Iterator i = waiting.iterator(); i.hasNext(); )
+         {
+            ResponseHandler handler = (ResponseHandler) i.next();
+            handler.handleSocketError(x);
+         }
+         // Attempt to close socket
+         close();
       }
    }
    Short getHandle(Session session)
@@ -306,6 +317,7 @@ class Multiplexor implements Runnable
    }
    void sendMessage(Short handle,int message, byte[] extra, String string) throws IOException
    {
+      if (socketClosed) throw new IOException("Socket closed");
       this.message.send(handle,message,extra,string);
    }
    

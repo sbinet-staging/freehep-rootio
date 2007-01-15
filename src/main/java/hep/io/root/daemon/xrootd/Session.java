@@ -75,7 +75,9 @@ class Session
       }
       catch (Exception x)
       {
-         handler.handleError(new IOException("Error during redirect",x));
+         IOException iox = new IOException("Error during redirect");
+         iox.initCause(x);
+         handler.handleError(iox);
          return;
       }
       
@@ -284,7 +286,12 @@ class Session
       try
       {
          wait();
-         if (exception != null) throw exception;
+         if (exception != null) 
+         {
+            IOException io = new IOException("IOException while waiting for response");
+            io.initCause(exception);
+            throw io;
+         }
       }
       catch (InterruptedException x)
       {
