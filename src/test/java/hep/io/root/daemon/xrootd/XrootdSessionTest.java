@@ -2,8 +2,6 @@ package hep.io.root.daemon.xrootd;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import junit.framework.TestCase;
 
@@ -21,7 +19,7 @@ public class XrootdSessionTest extends TestCase
 
    public void testMultiplexor() throws IOException
    {
-      XrootdSession handle = new XrootdSession("glast-xrootd01.slac.stanford.edu",1094,"tonyj");
+      Session handle = new Session("glast-xrootd01.slac.stanford.edu",1094,"tonyj");
       handle.ping();
       String dir = "/u/gl/glast/xrootd/testdata/";
       List files = handle.dirList(dir);

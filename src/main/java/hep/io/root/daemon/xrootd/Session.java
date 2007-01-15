@@ -9,58 +9,52 @@ import java.io.InterruptedIOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 
 /**
  * A handle is associated with each session, so that they can multiplex on a single
  * open socket to the server.
  * @author tonyj
  */
-class XrootdSession
+class Session
 {
    private String userName;
    private Short handle;
-   private XrootdMultiplexor multiplexor;
+   private Multiplexor multiplexor;
    private int bufferSize = 32768;
    private Object result; // TODO: Ugly, do something better
    private ByteArrayOutputStream bos = new ByteArrayOutputStream(20);
    private DataOutputStream out = new DataOutputStream(bos);
    private IOException exception = null;
-   private static Map/*<XrootdConnectionDescriptor,XrootdMultiplexor>*/ connectionMap = new HashMap/*<XrootdConnectionDescriptor,XrootdMultiplexor>*/();
-   private static Random random = new Random();
+
    /**
     * Many sessions can share a single XrootProtocol
     */
-   public XrootdSession(String host, int port, String userName) throws IOException
+   public Session(String host, int port, String userName) throws IOException
    {
       this.userName = userName;
-      XrootdMultiplexor multiplexor = connectTo(host,port,userName);
+      Multiplexor multiplexor = connectTo(host,port,userName);
       this.multiplexor = multiplexor;
-      this.handle = multiplexor.allocateHandle();
+      this.handle = multiplexor.getHandle(this);
    }
    /**
     * Open a host and connect to it without any side effects
     */
-   private XrootdMultiplexor connectTo(String host, int port, String userName) throws UnknownHostException, IOException
+   private Multiplexor connectTo(String host, int port, String userName) throws UnknownHostException, IOException
    {
       InetAddress[] addresses = InetAddress.getAllByName(host);
       // Randomize which host to use if multiple available.
-      int offset = random.nextInt(addresses.length);
+      Collections.shuffle(Arrays.asList(addresses));
+      
       for (int i = 0; i<addresses.length; )
       {
          try
          {
-            InetAddress address = addresses[(i+offset)%addresses.length];
-            XrootdConnectionDescriptor desc = new XrootdConnectionDescriptor(address,port,userName);
-            XrootdMultiplexor multiplexor = (XrootdMultiplexor) connectionMap.get(address);
-            if (multiplexor == null)
-            {
-               multiplexor = new XrootdMultiplexor(address,port,userName);
-               connectionMap.put(desc,multiplexor);
-            }
+            InetAddress address = addresses[i];
+            ConnectionDescriptor desc = new ConnectionDescriptor(address,port,userName);
+            Multiplexor multiplexor = Multiplexor.allocate(desc,this);
             return multiplexor;
          }
          catch (IOException x)
@@ -74,7 +68,7 @@ class XrootdSession
    }
    void redirectConnection(ResponseHandler handler, String host, int port) throws IOException
    {
-      XrootdMultiplexor multiplexor;
+      Multiplexor multiplexor;
       try
       {
          multiplexor = connectTo(host,port,userName);
@@ -88,16 +82,16 @@ class XrootdSession
       multiplexor.deregisterResponseHandler(handle);
       close();
       this.multiplexor = multiplexor;
-      this.handle = multiplexor.allocateHandle();
+      this.handle = multiplexor.getHandle(this);
       multiplexor.registerResponseHandler(handle,handler);
       handler.sendMessage();
    }
    
    synchronized void close() throws IOException
    {
-      if (handle != null)
+      if (multiplexor != null)
       {
-         multiplexor.freeHandle(handle);
+         multiplexor.free(this);
          handle = null;
       }
    }
@@ -106,7 +100,7 @@ class XrootdSession
       final List result = new ArrayList();
       ResponseHandler handler = new ResponseHandler(this)
       {
-         void handleResponse(XrootdMultiplexor.Response response) throws IOException
+         void handleResponse(Multiplexor.Response response) throws IOException
          {
             int rlen = response.getLength();
             DataInputStream in = response.getInputStream();
@@ -147,7 +141,7 @@ class XrootdSession
    {
       ResponseHandler handler = new ResponseHandler(this)
       {
-         void handleResponse(XrootdMultiplexor.Response response)
+         void handleResponse(Multiplexor.Response response)
          {
             responseComplete();
          }
@@ -164,7 +158,7 @@ class XrootdSession
    {
       ResponseHandler handler = new ResponseHandler(this)
       {
-         void handleResponse(XrootdMultiplexor.Response response) throws IOException
+         void handleResponse(Multiplexor.Response response) throws IOException
          {
             int rlen = response.getLength();
             byte[] data = new byte[rlen];
@@ -186,7 +180,7 @@ class XrootdSession
    {      
       ResponseHandler handler = new ResponseHandler(this)
       {
-         void handleResponse(XrootdMultiplexor.Response response) throws IOException
+         void handleResponse(Multiplexor.Response response) throws IOException
          {
             int rlen = response.getLength();
             result = new Integer(response.getInputStream().readInt());
@@ -212,7 +206,7 @@ class XrootdSession
    {
       ResponseHandler handler = new ResponseHandler(this)
       {
-         void handleResponse(XrootdMultiplexor.Response response)
+         void handleResponse(Multiplexor.Response response)
          {
             responseComplete();
          }
@@ -238,7 +232,7 @@ class XrootdSession
       ResponseHandler handler = new ResponseHandler(this)
       {
          private int l = 0;
-         void handleResponse(XrootdMultiplexor.Response response) throws IOException
+         void handleResponse(Multiplexor.Response response) throws IOException
          {
             int dlen = response.getLength();
             response.getInputStream().readFully(buffer,bufOffset+l,dlen);
@@ -277,7 +271,7 @@ class XrootdSession
    {
       multiplexor.deregisterResponseHandler(handle);
       exception = null;
-      XrootdSession.this.notify();
+      Session.this.notify();
    }
    synchronized void responseComplete(IOException x)
    {

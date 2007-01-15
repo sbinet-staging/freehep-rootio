@@ -4,15 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.TimerTask;
 import java.util.logging.ConsoleHandler;
@@ -20,12 +15,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Timer;
 
-class XrootdMultiplexor implements Runnable
-{   
-   private static Logger logger = Logger.getLogger("hep.io.root.daemon");
+class Multiplexor implements Runnable
+{
+   private static final int MAX_IDLE = 5000;
+   private static Logger logger = Logger.getLogger("hep.io.root.daemon.xrootd");
+   
    static
    {
-      if (System.getProperty("debugRootDaemon")!= null)
+      if (System.getProperty("debugRootDaemon") != null)
       {
          logger.setLevel(Level.FINE);
          ConsoleHandler handler = new ConsoleHandler();
@@ -35,14 +32,108 @@ class XrootdMultiplexor implements Runnable
    }
    
    private static Timer timer = new Timer("XrootdReader-timer",true);
+   private static Map/*<ConnectionDescriptor,Multiplexor>*/ connectionMap = new HashMap/*<ConnectionDescriptor,Multiplexor>*/();
    
+   private Socket socket;
+   private Thread thread;
+   private ConnectionDescriptor descriptor;
    private Message message;
    private Response response;
    private Map/* <Short,ResponseHandler> */ responseMap = new HashMap /*<Short,ResponseHandler>*/ ();
+   private TimerTask idleTimer;
    
    private ByteArrayOutputStream bos = new ByteArrayOutputStream(20);
    private DataOutputStream out = new DataOutputStream(bos);
    private BitSet handles = new BitSet();
+   private Map/*<Session,Short>*/ sessions = new HashMap/*<Session,Short>*/();
+   
+   /**
+    * Attempts to assign a multiplexor to a session.
+    * This is an atomic operation, guaranteed to either return a valid multiplexor,
+    * perhaps already shared with other session, or to throw an exception.
+    */
+   
+   static Multiplexor allocate(ConnectionDescriptor desc, Session session) throws IOException
+   {
+      Multiplexor m;
+      synchronized (connectionMap)
+      {
+         m = (Multiplexor) connectionMap.get(desc);
+         if (m == null)
+         {
+            m = new Multiplexor(desc);
+            connectionMap.put(desc,m);
+         }
+      }
+      int handle;
+      synchronized (m.handles)
+      {
+         //ToDo: What if we run out of handles?
+         handle = m.handles.nextClearBit(0);
+         m.handles.set(handle);
+         m.sessions.put(session,new Short((short) handle));
+         
+         if (m.idleTimer != null && m.sessions.size() == 1)
+         {
+            m.idleTimer.cancel();
+            m.idleTimer = null;
+         }
+      }
+      logger.info(m.descriptor+" Add session "+handle);
+      return m;
+   }
+   void free(Session session)
+   {
+      int handle;
+      synchronized (handles)
+      {
+         handle = ((Short) sessions.remove(session)).intValue();
+         handles.clear(handle);
+         
+         if (sessions.size() == 0)
+         {
+            idleTimer = new TimerTask()
+            {
+               public void run()
+               {
+                  timeout();
+               }
+            };
+            timer.schedule(idleTimer,MAX_IDLE);
+         }
+      }
+      logger.info(descriptor+" Free session "+handle);
+   }
+   void timeout()
+   {
+      synchronized (connectionMap)
+      {
+         synchronized (handles)
+         {
+            if (sessions.size() > 0) return;
+         }
+         connectionMap.remove(this.descriptor);
+      }
+      logger.info(descriptor+" Closing connection");
+//      try
+//      {
+//         thread.interrupt();
+//         thread.join();
+//      }
+//      catch (InterruptedException x)
+//      {
+//         logger.log(Level.WARNING,descriptor+" Error while shuting down thread",x);
+//      }
+      try
+      {
+         socket.close();
+      }
+      catch (IOException x)
+      {
+         logger.log(Level.WARNING,descriptor+" Error while closing socket",x);
+      }
+   }
+   
    
    /**
     * Low level implementation of the Xrootd multiplexor protocol.
@@ -51,54 +142,71 @@ class XrootdMultiplexor implements Runnable
     * @param address The address to connect to
     * @param port The port to connect to
     */
-   XrootdMultiplexor(InetAddress address, int port, String userName) throws IOException
+   private Multiplexor(ConnectionDescriptor desc) throws IOException
    {
+      logger.info(desc+" Opening connection");
+      this.descriptor = desc;
+      int port = desc.getPort();
       if (port == -1) port = XrootdProtocol.defaultPort;
-      Socket s = new Socket(address,port);
-      
-      bos.reset();
-      out.writeInt(0);
-      out.writeInt(0);
-      out.writeInt(0);
-      out.writeInt(4);
-      out.writeInt(2012);
-      out.flush();
-      bos.writeTo(s.getOutputStream());
-      
-      DataInputStream in = new DataInputStream(s.getInputStream());
-      response = new Response(in);
-      response.read();
-      int protocol = response.getInputStream().readInt();
-      int mode = response.getInputStream().readInt();
-      
-      message = new Message(s.getOutputStream());
-      
-      bos.reset();
-      out.writeInt(12345);
-      byte[] user = userName.getBytes();
-      for (int i=0; i<8; i++) out.writeByte(i<user.length ? user[i] : 0);
-      out.writeByte(0);
-      out.writeByte(0);
-      out.writeByte(0);
-      out.writeByte(XrootdProtocol.kXR_useruser);
-      out.flush();
-      sendMessage(new Short((short)0),XrootdProtocol.kXR_login,bos.toByteArray());
-      response.read();
-      
-      // Start a thread which will listen for future responses
-      // TODO: It would be better to use a single thread listening on all
-      // open sockets
-      // ToDo: This is never closed, there should be a timeout for inactivity
-      Thread t = new Thread(this,"XrootdReader-"+address+":"+port);
-      t.setDaemon(true);
-      t.start();
+      socket = new Socket(desc.getAddress(),port);
+      try
+      {
+         bos.reset();
+         out.writeInt(0);
+         out.writeInt(0);
+         out.writeInt(0);
+         out.writeInt(4);
+         out.writeInt(2012);
+         out.flush();
+         bos.writeTo(socket.getOutputStream());
+
+         DataInputStream in = new DataInputStream(socket.getInputStream());
+         int check = in.readInt();
+         if (check == 8) throw new IOException("rootd protocol not supported");
+         if (check != 0) throw new IOException("Unexpected initial handshake response");
+         int rlen = in.readInt();
+         if (rlen != 8) throw new IOException("Unexpected initial handshake length");
+         int protocol = in.readInt();
+         int mode = in.readInt();
+
+         logger.info(desc+" Logging in protocol="+protocol+" mode="+mode);
+
+         message = new Message(socket.getOutputStream());
+
+         bos.reset();
+         out.writeInt(12345);
+         byte[] user = desc.getUserName().getBytes();
+         for (int i=0; i<8; i++) out.writeByte(i<user.length ? user[i] : 0);
+         out.writeByte(0);
+         out.writeByte(0);
+         out.writeByte(0);
+         out.writeByte(XrootdProtocol.kXR_useruser);
+         out.flush();
+         sendMessage(new Short((short)0),XrootdProtocol.kXR_login,bos.toByteArray());
+         response = new Response(in);
+         response.read();
+
+         // Start a thread which will listen for future responses
+         // TODO: It would be better to use a single thread listening on all
+         // open sockets
+         thread = new Thread(this,"XrootdReader-"+desc.getAddress()+":"+port);
+         thread.setDaemon(true);
+         thread.start();
+         logger.info(desc+" Success");
+      }
+      catch (IOException x)
+      {
+         socket.close();
+         throw x;
+      }
    }
    public void run()
    {
-      for (;;)
+      try
       {
-         try
+         for (;!thread.currentThread().isInterrupted();)
          {
+            
             response.read();
             int status = response.getStatus();
             Short handle = response.getHandle();
@@ -123,7 +231,7 @@ class XrootdMultiplexor implements Runnable
                int seconds = in.readInt();
                byte[] message = new byte[response.getLength()-4];
                in.readFully(message);
-               System.out.println("Xrootd wait: "+new String(message,0,message.length)+" seconds="+seconds);
+               logger.warning(descriptor+" wait: "+new String(message,0,message.length)+" seconds="+seconds);
                
                TimerTask task = new TimerTask()
                {
@@ -131,6 +239,7 @@ class XrootdMultiplexor implements Runnable
                   {
                      try
                      {
+                        logger.info(descriptor+" resending message");
                         handler.sendMessage();
                      }
                      catch (IOException x)
@@ -160,30 +269,19 @@ class XrootdMultiplexor implements Runnable
                throw new IOException("Xrootd: Unimplemented status received: "+status);
             }
          }
-         catch (IOException x)
-         {
-            // We should only get here if there was a real IO error on the socket.
-            // ToDo: Something better.
-            x.printStackTrace();
-         }
       }
-   }
-   Short allocateHandle()
-   {
-      synchronized (handles)
+      catch (IOException x)
       {
-         int result = handles.nextClearBit(0);
-         handles.set(result);
-         return new Short((short) result);
+         // We should only get here if there was a real IO error on the socket.
+         // ToDo: Something better.
+         x.printStackTrace();
       }
    }
-   void freeHandle(Short handle)
+   Short getHandle(Session session)
    {
-      synchronized (handles)
-      {
-         handles.clear(handle.intValue());
-      }
+      return (Short) sessions.get(session);
    }
+   
    void registerResponseHandler(Short handle, ResponseHandler handler)
    {
       synchronized (responseMap)
@@ -210,7 +308,7 @@ class XrootdMultiplexor implements Runnable
    {
       this.message.send(handle,message,extra,string);
    }
-      
+   
    private static class Message
    {
       private OutputStream data;

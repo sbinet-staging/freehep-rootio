@@ -6,13 +6,13 @@ import java.net.InetAddress;
  * A connection may be shared by multiple sessions if they have the equivalent ConnectionDescriptor
  * @author tonyj
  */
-class XrootdConnectionDescriptor
+class ConnectionDescriptor
 {
    private String userName;
    private int port;
    private InetAddress address;
 
-   XrootdConnectionDescriptor(InetAddress address, int port, String userName)
+   ConnectionDescriptor(InetAddress address, int port, String userName)
    {
       this.address = address;
       this.port = port;
@@ -21,9 +21,9 @@ class XrootdConnectionDescriptor
 
     public boolean equals(Object obj) 
     {
-      if (obj instanceof XrootdConnectionDescriptor)
+      if (obj instanceof ConnectionDescriptor)
       {
-         XrootdConnectionDescriptor that = (XrootdConnectionDescriptor) obj;
+         ConnectionDescriptor that = (ConnectionDescriptor) obj;
          return this.address.equals(that.address) && 
                 this.port == that.port && 
                 this.userName == that.userName;
@@ -35,4 +35,24 @@ class XrootdConnectionDescriptor
     {
       return address.hashCode() + port + userName.hashCode();
     }
+
+   int getPort()
+   {
+      return port;
+   }
+
+   InetAddress getAddress()
+   {
+      return address;
+   }
+
+   String getUserName()
+   {
+      return userName;
+   }
+   
+   public String toString()
+   {
+      return "["+address+":"+port+":"+userName+"]";
+   }
 }

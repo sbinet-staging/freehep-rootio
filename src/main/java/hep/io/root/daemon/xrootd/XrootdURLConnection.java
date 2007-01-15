@@ -24,15 +24,17 @@ public class XrootdURLConnection extends URLConnection
    private String auth; // authorization mode to use
    private int bufferSize = 0;
    
-   private DaemonInputStream connection;
    private long date;
    private long fSize;
-   private static Logger logger = Logger.getLogger("hep.io.root.daemon");
+   private static Logger logger = Logger.getLogger("hep.io.root.daemon.xrootd");
    
    public static final String XROOT_AUTHORIZATION_SCHEME = "scheme";
    public static final String XROOT_AUTHORIZATION_USER = "user";   
    public static final String XROOT_AUTHORIZATION_PASSWORD = "password";   
    public static final String XROOT_BUFFER_SIZE = "bufferSize";
+
+   private Session session;
+   private int openStreamCount;
 
    XrootdURLConnection(URL url)
    {
@@ -41,7 +43,10 @@ public class XrootdURLConnection extends URLConnection
    public InputStream getInputStream() throws IOException
    {
       connect();
-      return connection;
+      InputStream stream = session.openStream(url.getFile(),0,XrootdProtocol.kXR_open_read);
+      ((XrootdInputStream) stream).setConnection(this);
+      openStreamCount++;
+      return stream;
    }
    public void connect() throws IOException
    {
@@ -80,26 +85,42 @@ public class XrootdURLConnection extends URLConnection
       if (password == null || username == null) throw new IOException("Authorization Required");
             
       logger.fine("Opening rootd connection to: "+url);
-      XrootdSession rp = new XrootdSession(url.getHost(),url.getPort(),username);
-      if (bufferSize != 0) rp.setBufferSize(bufferSize);
+      session = new Session(url.getHost(),url.getPort(),username);
+      try
+      {
+         if (bufferSize != 0) session.setBufferSize(bufferSize);
 
-      // ToDo: This could be delayed until needed.
-      String[] fstat = rp.stat(url.getFile());
-      fSize = Long.parseLong(fstat[1]);
-      date = Long.parseLong(fstat[3])*1000;
-      connection = rp.openStream(url.getFile(),0,XrootdProtocol.kXR_open_read);
-      connected = true;
+         // ToDo: This could be delayed until needed.
+         String[] fstat = session.stat(url.getFile());
+         fSize = Long.parseLong(fstat[1]);
+         date = Long.parseLong(fstat[3])*1000;
+         connected = true;
+      }
+      catch (IOException t)
+      {
+         disconnect();
+         throw t;
+      }
+   }
+   public void disconnect() throws IOException
+   {
+      if (session != null)
+      {
+         session.close();
+         session = null;
+      }
+      connected = false;
    }
    
    public int getContentLength()
    {
-      if (connection == null) return -1;
+      if (session == null) return -1;
       return (int) fSize;
    }
    
    public long getLastModified()
    {
-      if (connection == null) return -1;
+      if (session == null) return 0;
       return date;
    }
    
@@ -115,4 +136,10 @@ public class XrootdURLConnection extends URLConnection
       else if (key.equalsIgnoreCase(XROOT_AUTHORIZATION_SCHEME ))  auth = value;
       else if (key.equalsIgnoreCase(XROOT_BUFFER_SIZE)) bufferSize = Integer.parseInt(value);
    }  
+
+   void streamClosed() throws IOException
+   {
+      openStreamCount--;
+      if (openStreamCount == 0) disconnect();
+   }
 }

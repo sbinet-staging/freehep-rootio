@@ -8,8 +8,8 @@ import java.io.IOException;
  */
 abstract class ResponseHandler
 {
-   private XrootdSession handle;
-   ResponseHandler(XrootdSession handle)
+   private Session handle;
+   ResponseHandler(Session handle)
    {
       this.handle = handle;
    }
@@ -24,5 +24,5 @@ abstract class ResponseHandler
       handle.responseComplete(x);
    }
    abstract void sendMessage() throws IOException;
-   abstract void handleResponse(XrootdMultiplexor.Response response) throws IOException;
+   abstract void handleResponse(Multiplexor.Response response) throws IOException;
 }

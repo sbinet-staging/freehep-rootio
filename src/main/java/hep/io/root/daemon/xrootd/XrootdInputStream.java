@@ -16,9 +16,10 @@ class XrootdInputStream extends DaemonInputStream
    private int bpos = 0;
    private int blen = 0;
    private int fh;
-   private XrootdSession handle;
+   private Session handle;
+   private XrootdURLConnection connection;
    
-   XrootdInputStream(XrootdSession handle, int fh, int bufferSize)
+   XrootdInputStream(Session handle, int fh, int bufferSize)
    {
       this.fh = fh;
       this.handle = handle;
@@ -37,7 +38,12 @@ class XrootdInputStream extends DaemonInputStream
    
    public void close() throws IOException
    {
+      if (handle != null) 
+      {
          handle.close(fh);
+         handle = null;
+         if (connection != null) connection.streamClosed();
+      }
    }
    
    public int read(byte[] values, int offset, int size) throws IOException
@@ -99,5 +105,15 @@ class XrootdInputStream extends DaemonInputStream
    public long getPosition()
    {
       return position + bpos;
+   }
+   
+   protected void finalize() throws Throwable
+   {
+      close();
+      super.finalize();
+   }
+   void setConnection(XrootdURLConnection connection)
+   {
+      this.connection = connection;
    }
 }

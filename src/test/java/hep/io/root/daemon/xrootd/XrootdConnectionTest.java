@@ -25,9 +25,9 @@ public class XrootdConnectionTest extends TestCase
       URLConnection conn = url.openConnection();
       conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
       InputStream in = conn.getInputStream();
-      assertEquals(expectedLength,conn.getContentLength());
       try
       {
+         assertEquals(expectedLength,conn.getContentLength());
          int size = 0;
          byte[] buffer = new byte[8096];
          for (;;)
@@ -70,9 +70,24 @@ public class XrootdConnectionTest extends TestCase
       }
    }
    public void testError() throws MalformedURLException, IOException
+   {      
+      URL url = new URL(null,"xroot://glast-xrootd01.slac.stanford.edu/NoSuchFile", new XrootdStreamHandler());
+      URLConnection conn = url.openConnection();
+      conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
+      try
+      {
+         InputStream in = conn.getInputStream();
+         fail("Should have thrown an exception");
+      }
+      catch (IOException x)
+      {
+         // OK, expected
+      }
+   }
+   public void testError6() throws MalformedURLException, IOException
    {
       
-      URL url = new URL(null,"xroot://glast-xrootd01.slac.stanford.edu/NonExisTantFile", new XrootdStreamHandler());
+      URL url = new URL(null,"xroot://glast-rdr.slac.stanford.edu/NonExisTantFile", new XrootdStreamHandler());
       URLConnection conn = url.openConnection();
       conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
       try
@@ -89,6 +104,22 @@ public class XrootdConnectionTest extends TestCase
    {
       
       URL url = new URL(null,"xroot://glast-xrootd01.slac.stanford.edu/u/gl/glast/xrootd/testdata/PAWdemo.root", new XrootdStreamHandler());
+      URLConnection conn = url.openConnection();
+      conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
+      try
+      {
+         InputStream in = conn.getInputStream();
+         fail("Should have thrown an exception");
+      }
+      catch (IOException x)
+      {
+         // OK, expected
+      }
+   }
+   public void testError5() throws MalformedURLException, IOException
+   {
+      
+      URL url = new URL(null,"root://sldrh2.slac.stanford.edu/pawdemo.root", new XrootdStreamHandler());
       URLConnection conn = url.openConnection();
       conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
       try
