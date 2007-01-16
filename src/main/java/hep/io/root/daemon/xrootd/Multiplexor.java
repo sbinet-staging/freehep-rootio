@@ -27,9 +27,9 @@ class Multiplexor implements Runnable
    {
       if (System.getProperty("debugRootDaemon") != null)
       {
-         logger.setLevel(Level.FINE);
+         logger.setLevel(Level.FINER);
          ConsoleHandler handler = new ConsoleHandler();
-         handler.setLevel(Level.FINE);
+         handler.setLevel(Level.FINER);
          logger.addHandler(handler);
       }
    }
@@ -83,7 +83,7 @@ class Multiplexor implements Runnable
             m.idleTimer = null;
          }
       }
-      logger.info(m.descriptor+" Add session "+handle);
+      logger.fine(m.descriptor+" Add session "+handle);
       return m;
    }
    void free(Session session)
@@ -106,7 +106,7 @@ class Multiplexor implements Runnable
             timer.schedule(idleTimer,MAX_IDLE);
          }
       }
-      logger.info(descriptor+" Free session "+handle);
+      logger.fine(descriptor+" Free session "+handle);
    }
    private void close()
    {
@@ -118,7 +118,7 @@ class Multiplexor implements Runnable
          }
          connectionMap.remove(this.descriptor);
       }
-      logger.info(descriptor+" Closing connection");
+      logger.fine(descriptor+" Closing connection");
       
       try
       {
@@ -141,7 +141,7 @@ class Multiplexor implements Runnable
     */
    private Multiplexor(ConnectionDescriptor desc) throws IOException
    {
-      logger.info(desc+" Opening connection");
+      logger.fine(desc+" Opening connection");
       this.descriptor = desc;
       int port = desc.getPort();
       if (port == -1) port = XrootdProtocol.defaultPort;
@@ -165,7 +165,7 @@ class Multiplexor implements Runnable
          int protocol = in.readInt();
          int mode = in.readInt();
          
-         logger.info(desc+" Logging in protocol="+protocol+" mode="+mode);
+         logger.fine(desc+" Logging in protocol="+protocol+" mode="+mode);
          
          message = new Message(socket.getOutputStream());
          
@@ -188,7 +188,7 @@ class Multiplexor implements Runnable
          thread = new Thread(this,"XrootdReader-"+desc.getAddress()+":"+port);
          thread.setDaemon(true);
          thread.start();
-         logger.info(desc+" Success");
+         logger.fine(desc+" Success");
       }
       catch (IOException x)
       {
@@ -227,7 +227,7 @@ class Multiplexor implements Runnable
                int seconds = in.readInt();
                byte[] message = new byte[response.getLength()-4];
                in.readFully(message);
-               logger.warning(descriptor+" wait: "+new String(message,0,message.length)+" seconds="+seconds);
+               logger.info(descriptor+" wait: "+new String(message,0,message.length)+" seconds="+seconds);
                
                TimerTask task = new TimerTask()
                {
@@ -235,7 +235,7 @@ class Multiplexor implements Runnable
                   {
                      try
                      {
-                        logger.info(descriptor+" resending message");
+                        logger.fine(descriptor+" resending message");
                         handler.sendMessage();
                      }
                      catch (IOException x)
@@ -335,7 +335,7 @@ class Multiplexor implements Runnable
       
       synchronized void send(Short handle, int message, byte[] extra, String string) throws IOException
       {
-         logger.fine("->"+message);
+         logger.finer("->"+message);
          bos.reset();
          out.writeShort(handle.shortValue());
          out.writeShort(message);
@@ -369,7 +369,7 @@ class Multiplexor implements Runnable
          handle = new Short(in.readShort());
          status = in.readUnsignedShort();
          dataLength = in.readInt();
-         logger.fine("<-"+handle+" "+status+" "+dataLength);
+         logger.finer("<-"+handle+" "+status+" "+dataLength);
          return status;
       }
       int getStatus()
