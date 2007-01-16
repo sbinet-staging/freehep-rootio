@@ -288,7 +288,9 @@ class Session
          wait();
          if (exception != null) 
          {
-            IOException io = new IOException("IOException while waiting for response");
+            IOException io = new IOException(exception.getMessage());
+            // preserve original exception since it occured on another thread
+            // otherwise loose useful stacktrack info.
             io.initCause(exception);
             throw io;
          }
