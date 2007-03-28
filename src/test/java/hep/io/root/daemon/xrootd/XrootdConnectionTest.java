@@ -2,6 +2,7 @@ package hep.io.root.daemon.xrootd;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import junit.framework.*;
 import java.net.URL;
@@ -47,7 +48,8 @@ public class XrootdConnectionTest extends TestCase
    {
       int expectedLength = 2003749;
       // Fixme: This currently fails outside SLAC. Maybe we can teach the redirector about the test data
-      URL url = new URL(null,"xroot://glast-rdr.slac.stanford.edu/glast/mc/DC2/ChickenLittle-GR-v7r3p24-2/000/126/ChickenLittle-GR-v7r3p24-2_000126_digi_DIGI.root", new XrootdStreamHandler());
+      if (!InetAddress.getLocalHost().getHostAddress().startsWith("134.79")) return;
+      URL url = new URL(null,"xroot://glast-rdr.slac.stanford.edu//glast/mc/DC2/ChickenLittle-GR-v7r3p24-2/029/615/ChickenLittle-GR-v7r3p24-2_029615_mc_MC.root", new XrootdStreamHandler());
       URLConnection conn = url.openConnection();
       conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
       InputStream in = conn.getInputStream();

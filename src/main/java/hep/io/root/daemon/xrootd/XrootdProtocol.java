@@ -50,6 +50,14 @@ class XrootdProtocol
    public final static int kXR_ow = 0x002;
    public final static int kXR_ox = 0x001;
    
+   public final static int kXR_file = 0;
+   public final static int kXR_xset = 1;
+   public final static int kXR_isDir = 2;
+   public final static int kXR_other = 4;
+   public final static int kXR_offline = 8;
+   public final static int kXR_readable = 16;
+   public final static int kXR_writable = 32;
+   
    public final static int kXR_compress = 1;
    public final static int kXR_delete   = 2;
    public final static int kXR_force    = 4;
@@ -59,7 +67,12 @@ class XrootdProtocol
    public final static int kXR_async    = 64;
    public final static int kXR_refresh  = 128;
    
+   public final static int kXR_cancel = 1;
+   public final static int kXR_notify = 2;
+   public final static int kXR_noerrs = 4;
+   public final static int kXR_stage  = 8;
+   public final static int kXR_wmode  = 16;
+   
    final static int kXR_useruser = 0;
    final static int kXR_useradmin = 1;
-   
 }

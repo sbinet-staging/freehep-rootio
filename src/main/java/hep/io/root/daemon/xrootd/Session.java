@@ -28,7 +28,7 @@ class Session
    private ByteArrayOutputStream bos = new ByteArrayOutputStream(20);
    private DataOutputStream out = new DataOutputStream(bos);
    private IOException exception = null;
-
+   
    /**
     * Many sessions can share a single XrootProtocol
     */
@@ -143,10 +143,6 @@ class Session
    {
       ResponseHandler handler = new ResponseHandler(this)
       {
-         void handleResponse(Multiplexor.Response response)
-         {
-            responseComplete();
-         }
          void sendMessage() throws IOException
          {
             multiplexor.sendMessage(handle,XrootdProtocol.kXR_ping);
@@ -178,8 +174,42 @@ class Session
       waitForResponse();
       return (String[]) result;
    }
+   synchronized String prepare(String[] path, int options, int priority) throws IOException
+   {
+      final StringBuffer plist = new StringBuffer();
+      for (int i=0; i<path.length; i++)
+      {
+         plist.append(path[i]);
+         plist.append('\n');
+      }
+      ResponseHandler handler = new ResponseHandler(this)
+      {
+         void handleResponse(Multiplexor.Response response) throws IOException
+         {
+            int rlen = response.getLength();
+            byte[] data = new byte[rlen];
+            response.getInputStream().readFully(data);
+            result = new String(data,0,rlen-1);
+            responseComplete();
+         }
+         void sendMessage() throws IOException
+         {
+            multiplexor.sendMessage(handle,XrootdProtocol.kXR_prepare,bos.toByteArray(),plist.toString());
+         }
+      };
+      bos.reset();
+      out.writeByte(options);
+      out.writeByte(priority);
+      for (int i=0; i<14; i++) out.writeByte(0);
+      out.flush();
+      
+      multiplexor.registerResponseHandler(handle,handler);
+      handler.sendMessage();
+      waitForResponse();
+      return (String) result;
+   }
    synchronized int open(final String path, final int mode, final int options) throws IOException
-   {      
+   {
       ResponseHandler handler = new ResponseHandler(this)
       {
          void handleResponse(Multiplexor.Response response) throws IOException
@@ -208,10 +238,6 @@ class Session
    {
       ResponseHandler handler = new ResponseHandler(this)
       {
-         void handleResponse(Multiplexor.Response response)
-         {
-            responseComplete();
-         }
          void sendMessage() throws IOException
          {
             multiplexor.sendMessage(handle,XrootdProtocol.kXR_close,bos.toByteArray());
@@ -248,7 +274,7 @@ class Session
          }
          void sendMessage() throws IOException
          {
-            multiplexor.sendMessage(handle,XrootdProtocol.kXR_read,bos.toByteArray());            
+            multiplexor.sendMessage(handle,XrootdProtocol.kXR_read,bos.toByteArray());
          }
       };
       
@@ -269,7 +295,7 @@ class Session
       return new XrootdInputStream(this,fh,bufferSize);
    }
    
-   private synchronized void responseComplete()
+   synchronized void responseComplete()
    {
       multiplexor.deregisterResponseHandler(handle);
       exception = null;
@@ -286,7 +312,7 @@ class Session
       try
       {
          wait();
-         if (exception != null) 
+         if (exception != null)
          {
             IOException io = new IOException(exception.getMessage());
             // preserve original exception since it occured on another thread

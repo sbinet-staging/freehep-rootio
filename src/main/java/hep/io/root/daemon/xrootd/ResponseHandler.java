@@ -13,19 +13,22 @@ abstract class ResponseHandler
    {
       this.handle = handle;
    }
-
+   
    void handleRedirect(String host, int port) throws IOException
    {
       handle.redirectConnection(this,host,port);
    }
-
+   
    void handleError(IOException x)
    {
       handle.responseComplete(x);
    }
    abstract void sendMessage() throws IOException;
-   abstract void handleResponse(Multiplexor.Response response) throws IOException;
-
+   void handleResponse(Multiplexor.Response response) throws IOException
+   {
+      handle.responseComplete();
+   }
+   
    void handleSocketError(IOException x)
    {
       handleError(x);

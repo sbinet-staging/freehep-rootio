@@ -26,6 +26,7 @@ public class XrootdURLConnection extends URLConnection
    
    private long date;
    private long fSize;
+   private int flags;
    private static Logger logger = Logger.getLogger("hep.io.root.daemon.xrootd");
    
    public static final String XROOT_AUTHORIZATION_SCHEME = "scheme";
@@ -93,6 +94,7 @@ public class XrootdURLConnection extends URLConnection
          // ToDo: This could be delayed until needed.
          String[] fstat = session.stat(url.getFile());
          fSize = Long.parseLong(fstat[1]);
+         flags = Integer.parseInt(fstat[2]);
          date = Long.parseLong(fstat[3])*1000;
          connected = true;
       }
@@ -141,5 +143,13 @@ public class XrootdURLConnection extends URLConnection
    {
       openStreamCount--;
       if (openStreamCount == 0) disconnect();
+   }
+
+   public String getHeaderField(int n)
+   {
+      String retValue;
+      
+      retValue = super.getHeaderField(n);
+      return retValue;
    }
 }

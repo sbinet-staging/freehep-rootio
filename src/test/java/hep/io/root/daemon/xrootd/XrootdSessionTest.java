@@ -2,6 +2,7 @@ package hep.io.root.daemon.xrootd;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.util.List;
 import junit.framework.TestCase;
 
