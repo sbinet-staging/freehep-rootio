@@ -284,6 +284,8 @@ class RootInputStream extends DataInputStream implements RootInput
             readFixedArray(in, (double[]) o);
          else if (o instanceof float[])
             readFixedArray(in, (float[]) o);
+         else if (o instanceof short[])
+            readFixedArray(in, (short[]) o);
          else if (o instanceof byte[])
             readFixedArray(in, (byte[]) o);
          else if (o instanceof int[])
