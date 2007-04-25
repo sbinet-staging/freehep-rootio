@@ -46,7 +46,7 @@ public class XrootdConnectionTest extends TestCase
    }
    public void testRedirect()  throws MalformedURLException, IOException
    {
-      int expectedLength = 2003749;
+      int expectedLength = 7251570;
       // Fixme: This currently fails outside SLAC. Maybe we can teach the redirector about the test data
       if (!InetAddress.getLocalHost().getHostAddress().startsWith("134.79")) return;
       URL url = new URL(null,"xroot://glast-rdr.slac.stanford.edu//glast/mc/DC2/ChickenLittle-GR-v7r3p24-2/029/615/ChickenLittle-GR-v7r3p24-2_029615_mc_MC.root", new XrootdStreamHandler());

@@ -238,10 +238,12 @@ public class FastInputStream implements RootInput
             readFixedArray((byte[]) o);
          else if (o instanceof int[])
             readFixedArray((int[]) o);
+         else if (o instanceof long[])
+            readFixedArray((long[]) o);
          else if (o instanceof Object[])
             readMultiArray((Object[]) o);
          else
-            throw new IOException("Unknown multiarray element");
+            throw new IOException("Unknown multiarray element: "+o.getClass());
       }
    }
 

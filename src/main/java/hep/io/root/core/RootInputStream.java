@@ -288,10 +288,12 @@ class RootInputStream extends DataInputStream implements RootInput
             readFixedArray(in, (byte[]) o);
          else if (o instanceof int[])
             readFixedArray(in, (int[]) o);
+         else if (o instanceof long[])
+            readFixedArray(in, (long[]) o);
          else if (o instanceof Object[])
             readMultiArray(in, (Object[]) o);
          else
-            throw new IOException("Unknown multiarray element");
+            throw new IOException("Unknown multiarray element: "+o.getClass());
       }
    }
    
