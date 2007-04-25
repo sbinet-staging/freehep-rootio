@@ -7,5 +7,5 @@ package hep.io.root.interfaces;
 
 public interface TLeafO extends hep.io.root.RootObject, TLeaf
 {
-   Object getValue(long index) throws java.io.IOException;
+   boolean getValue(long index) throws java.io.IOException;
 }
