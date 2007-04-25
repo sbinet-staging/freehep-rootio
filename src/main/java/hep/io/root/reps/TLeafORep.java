@@ -62,7 +62,7 @@ public abstract class TLeafORep extends AbstractRootObject implements TLeafO, Co
          RootInput in = branch.setPosition(this, index);
          int arrayDim = getArrayDim();
          if (arrayDim == 0)
-            return lastValue = new Long(in.readLong());
+            return lastValue = Boolean.valueOf(in.readByte() != 0);
          else if (arrayDim == 1)
          {
             TLeafI count = (TLeafI) getLeafCount();
