@@ -131,14 +131,14 @@ public class XrootdURLConnection extends URLConnection
       return getLastModified();
    }   
    
-   public int getCheckSum() throws IOException
+   public long getCheckSum() throws IOException
    {
       if (session == null) return -1;
       else
       {
          String result = session.query(XrootdProtocol.kXR_Qcksum,url.getFile());
          String[] split = result.split(" ");
-         return Integer.parseInt(split[1]);
+         return Long.parseLong(split[1]);
       }
    }
    

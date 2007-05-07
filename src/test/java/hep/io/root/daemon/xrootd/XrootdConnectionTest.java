@@ -82,7 +82,7 @@ public class XrootdConnectionTest extends TestCase
       URLConnection conn = url.openConnection();
       conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME_ANONYMOUS);
       conn.connect();
-      int cksum = ((XrootdURLConnection) conn).getCheckSum();
+      long cksum = ((XrootdURLConnection) conn).getCheckSum();
       assertEquals(153993336,cksum);
    }
    public void testError() throws MalformedURLException, IOException
