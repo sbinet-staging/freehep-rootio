@@ -18,7 +18,7 @@ public class XrootdPrepareTest extends TestCase
    
    public void testPrepare() throws IOException
    {
-      if (!InetAddress.getLocalHost().getHostAddress().startsWith("134.79")) return;
+      if (!XrootdConnectionTest.isAtSLAC()) return;
       Session handle = new Session("glast-rdr.slac.stanford.edu",1094,"tonyj");
       handle.ping();
       

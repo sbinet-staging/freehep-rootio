@@ -75,4 +75,10 @@ class XrootdProtocol
    
    final static int kXR_useruser = 0;
    final static int kXR_useradmin = 1;
+   
+   final static int kXR_QStats = 1;
+   final static int kXR_QPrep = 2; 
+   final static int kXR_Qcksum = 3; 
+   final static int kXR_Qolbd = 4;
+   final static int kXR_Qmaxs = 5; 
 }

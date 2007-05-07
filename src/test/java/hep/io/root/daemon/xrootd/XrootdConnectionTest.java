@@ -4,9 +4,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import junit.framework.*;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Enumeration;
 
 /**
  *
@@ -48,7 +51,7 @@ public class XrootdConnectionTest extends TestCase
    {
       int expectedLength = 7251570;
       // Fixme: This currently fails outside SLAC. Maybe we can teach the redirector about the test data
-      if (!InetAddress.getLocalHost().getHostAddress().startsWith("134.79")) return;
+      if (!isAtSLAC()) return;
       URL url = new URL(null,"xroot://glast-rdr.slac.stanford.edu//glast/mc/DC2/ChickenLittle-GR-v7r3p24-2/029/615/ChickenLittle-GR-v7r3p24-2_029615_mc_MC.root", new XrootdStreamHandler());
       URLConnection conn = url.openConnection();
       conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
@@ -71,8 +74,19 @@ public class XrootdConnectionTest extends TestCase
          in.close();
       }
    }
+   public void testChecksum()  throws MalformedURLException, IOException
+   {
+      // Fixme: This currently fails outside SLAC. Maybe we can teach the redirector about the test data
+      if (!isAtSLAC()) return;
+      URL url = new URL(null,"xroot://glast-rdr.slac.stanford.edu//glast/mc/DC2/ChickenLittle-GR-v7r3p24-2/029/615/ChickenLittle-GR-v7r3p24-2_029615_mc_MC.root", new XrootdStreamHandler());
+      URLConnection conn = url.openConnection();
+      conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME_ANONYMOUS);
+      conn.connect();
+      int cksum = ((XrootdURLConnection) conn).getCheckSum();
+      assertEquals(153993336,cksum);
+   }
    public void testError() throws MalformedURLException, IOException
-   {      
+   {
       URL url = new URL(null,"xroot://glast-xrootd01.slac.stanford.edu/NoSuchFile", new XrootdStreamHandler());
       URLConnection conn = url.openConnection();
       conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
@@ -164,6 +178,28 @@ public class XrootdConnectionTest extends TestCase
       catch (IOException x)
       {
          // OK, expected
+      }
+   }
+   static boolean isAtSLAC()
+   {
+      try
+      {
+         Enumeration nie = NetworkInterface.getNetworkInterfaces();
+         while (nie.hasMoreElements())
+         {
+            NetworkInterface ni = (NetworkInterface) nie.nextElement();
+            Enumeration ie = ni.getInetAddresses();
+            while (ie.hasMoreElements())
+            {
+               InetAddress address = (InetAddress) ie.nextElement();
+               if (address.getHostAddress().startsWith("134.79")) return true;
+            }
+         }
+         return false;
+      }
+      catch (SocketException x)
+      {
+         return false;
       }
    }
 }

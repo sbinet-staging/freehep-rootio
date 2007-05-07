@@ -1,6 +1,5 @@
 package hep.io.root.daemon.xrootd;
 
-import hep.io.root.daemon.DaemonInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Authenticator;
@@ -30,6 +29,7 @@ public class XrootdURLConnection extends URLConnection
    private static Logger logger = Logger.getLogger("hep.io.root.daemon.xrootd");
    
    public static final String XROOT_AUTHORIZATION_SCHEME = "scheme";
+   public static final String XROOT_AUTHORIZATION_SCHEME_ANONYMOUS = "anonymous";
    public static final String XROOT_AUTHORIZATION_USER = "user";   
    public static final String XROOT_AUTHORIZATION_PASSWORD = "password";   
    public static final String XROOT_BUFFER_SIZE = "bufferSize";
@@ -54,9 +54,9 @@ public class XrootdURLConnection extends URLConnection
       if (connected) return;
 
       if (auth == null) auth = System.getProperty("root.scheme");
-      if (auth != null && auth.equalsIgnoreCase("anonymous"))
+      if (auth != null && auth.equalsIgnoreCase(XROOT_AUTHORIZATION_SCHEME_ANONYMOUS))
       {
-         username = "anonymous";
+         username = XROOT_AUTHORIZATION_SCHEME_ANONYMOUS;
          try
          {
             password = System.getProperty("user.name")+"@"+InetAddress.getLocalHost().getCanonicalHostName();
@@ -131,6 +131,17 @@ public class XrootdURLConnection extends URLConnection
       return getLastModified();
    }   
    
+   public int getCheckSum() throws IOException
+   {
+      if (session == null) return -1;
+      else
+      {
+         String result = session.query(XrootdProtocol.kXR_Qcksum,url.getFile());
+         String[] split = result.split(" ");
+         return Integer.parseInt(split[1]);
+      }
+   }
+   
    public void setRequestProperty(String key, String value)
    {
       if      (key.equalsIgnoreCase(XROOT_AUTHORIZATION_USER))     username = value;
@@ -143,13 +154,5 @@ public class XrootdURLConnection extends URLConnection
    {
       openStreamCount--;
       if (openStreamCount == 0) disconnect();
-   }
-
-   public String getHeaderField(int n)
-   {
-      String retValue;
-      
-      retValue = super.getHeaderField(n);
-      return retValue;
    }
 }

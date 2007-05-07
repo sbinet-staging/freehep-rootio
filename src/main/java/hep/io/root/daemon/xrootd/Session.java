@@ -174,6 +174,31 @@ class Session
       waitForResponse();
       return (String[]) result;
    }
+   synchronized String query(final int queryType, final String path) throws IOException
+   {
+      ResponseHandler handler = new ResponseHandler(this)
+      {
+         void handleResponse(Multiplexor.Response response) throws IOException
+         {
+            int rlen = response.getLength();
+            byte[] data = new byte[rlen];
+            response.getInputStream().readFully(data);
+            result = new String(data,0,rlen-1);
+            responseComplete();
+         }
+         void sendMessage() throws IOException
+         {
+            multiplexor.sendMessage(handle,XrootdProtocol.kXR_query,bos.toByteArray(),path);
+         }
+      };
+      bos.reset();
+      out.writeShort(queryType);
+      for (int i=0; i<14; i++) out.writeByte(0);
+      multiplexor.registerResponseHandler(handle,handler);
+      handler.sendMessage();
+      waitForResponse();
+      return (String) result;
+   }
    synchronized String prepare(String[] path, int options, int priority) throws IOException
    {
       final StringBuffer plist = new StringBuffer();
