@@ -151,7 +151,8 @@ class Multiplexor implements Runnable
          bos.reset();
          out.writeInt(0);
          out.writeInt(0);
-         out.writeInt(0);         out.writeInt(4);
+         out.writeInt(0); 
+         out.writeInt(4);
          out.writeInt(2012);
          out.flush();
          bos.writeTo(socket.getOutputStream());
@@ -175,12 +176,15 @@ class Multiplexor implements Runnable
          for (int i=0; i<8; i++) out.writeByte(i<user.length ? user[i] : 0);
          out.writeByte(0);
          out.writeByte(0);
-         out.writeByte(0);
+         out.writeByte(XrootdProtocol.kXR_asyncap | XrootdProtocol.XRD_CLIENT_CURRENTVER);
          out.writeByte(XrootdProtocol.kXR_useruser);
          out.flush();
          sendMessage(new Short((short)0),XrootdProtocol.kXR_login,bos.toByteArray());
          response = new Response(in);
          response.read();
+         int dlen = response.getLength();
+         DataInputStream rin = response.getInputStream();
+         for (int i=0; i<dlen; i++) rin.read();
          
          // Start a thread which will listen for future responses
          // TODO: It would be better to use a single thread listening on all
@@ -194,7 +198,7 @@ class Multiplexor implements Runnable
       {
          socket.close();
          throw x;
-      }
+       }
    }
    public void run()
    {
@@ -212,7 +216,7 @@ class Multiplexor implements Runnable
                handler = (ResponseHandler) responseMap.get(handle);
             }
             
-            if (handler == null) throw new IOException("No handler found for handle "+handle);
+            if (handler == null && status == XrootdProtocol.kXR_attn) throw new IOException("No handler found for handle "+handle);
             if (status == XrootdProtocol.kXR_error)
             {
                DataInputStream in = response.getInputStream();
@@ -246,6 +250,14 @@ class Multiplexor implements Runnable
                };
                timer.schedule(task,1000*seconds);
             }
+            else if (status == XrootdProtocol.kXR_waitresp)
+            {
+               DataInputStream in = response.getInputStream();
+               int seconds = in.readInt();
+               byte[] message = new byte[response.getLength()-4];
+               in.readFully(message);
+               logger.info(descriptor+" waitresp: "+new String(message,0,message.length)+" seconds="+seconds);                
+            }
             else if (status == XrootdProtocol.kXR_redirect)
             {
                DataInputStream in = response.getInputStream();
@@ -254,6 +266,18 @@ class Multiplexor implements Runnable
                in.readFully(message);
                String host = new String(message,0,message.length);
                handler.handleRedirect(host,port);
+            }
+            else if (status == XrootdProtocol.kXR_attn)
+            {
+               DataInputStream in = response.getInputStream();
+               int code = in.readInt();
+               if (code == XrootdProtocol.kXR_asynresp)
+               {
+                   in.readInt(); // reserved
+                   // rest should be a standard response, so just loop
+                   continue;
+               }
+               else throw new IOException("Xrootd: Unimplemented asycn message received: "+code);
             }
             else if (status == XrootdProtocol.kXR_ok || status == XrootdProtocol.kXR_oksofar)
             {
