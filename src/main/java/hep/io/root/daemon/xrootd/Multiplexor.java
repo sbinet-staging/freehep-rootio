@@ -216,7 +216,7 @@ class Multiplexor implements Runnable
                handler = (ResponseHandler) responseMap.get(handle);
             }
             
-            if (handler == null && status == XrootdProtocol.kXR_attn) throw new IOException("No handler found for handle "+handle);
+            if (handler == null && status != XrootdProtocol.kXR_attn) throw new IOException("No handler found for handle "+handle);
             if (status == XrootdProtocol.kXR_error)
             {
                DataInputStream in = response.getInputStream();
