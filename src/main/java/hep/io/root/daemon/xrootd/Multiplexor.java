@@ -49,7 +49,6 @@ class Multiplexor implements Runnable
    private ByteArrayOutputStream bos = new ByteArrayOutputStream(20);
    private DataOutputStream out = new DataOutputStream(bos);
    private BitSet handles = new BitSet();
-   private Map/*<Session,Short>*/ sessions = new HashMap/*<Session,Short>*/();
    
    /**
     * Attempts to assign a multiplexor to a session.
@@ -57,7 +56,7 @@ class Multiplexor implements Runnable
     * perhaps already shared with other session, or to throw an exception.
     */
    
-   static Multiplexor allocate(ConnectionDescriptor desc, Session session) throws IOException
+   static Multiplexor allocate(ConnectionDescriptor desc) throws IOException
    {
       Multiplexor m;
       synchronized (connectionMap)
@@ -69,32 +68,35 @@ class Multiplexor implements Runnable
             connectionMap.put(desc,m);
          }
       }
+      return m;
+   }
+   Short allocate(Session session)
+   {
       int handle;
-      synchronized (m.handles)
+      synchronized (handles)
       {
          //ToDo: What if we run out of handles?
-         handle = m.handles.nextClearBit(0);
-         m.handles.set(handle);
-         m.sessions.put(session,new Short((short) handle));
+         handle = handles.nextClearBit(0);
+         handles.set(handle);
          
-         if (m.idleTimer != null && m.sessions.size() == 1)
+         if (idleTimer != null)
          {
-            m.idleTimer.cancel();
-            m.idleTimer = null;
+            idleTimer.cancel();
+            idleTimer = null;
          }
       }
-      logger.fine(m.descriptor+" Add session "+handle);
-      return m;
+      logger.fine(descriptor+" Add session "+handle);
+      return new Short((short) handle);
    }
    void free(Session session)
    {
       int handle;
       synchronized (handles)
       {
-         handle = ((Short) sessions.remove(session)).intValue();
+         handle = session.getHandle().intValue();
          handles.clear(handle);
          
-         if (sessions.size() == 0)
+         if (handles.cardinality() == 0)
          {
             idleTimer = new TimerTask()
             {
@@ -114,7 +116,7 @@ class Multiplexor implements Runnable
       {
          synchronized (handles)
          {
-            if (sessions.size() > 0) return;
+            if (handles.cardinality() > 0) return;
          }
          connectionMap.remove(this.descriptor);
       }
@@ -311,10 +313,6 @@ class Multiplexor implements Runnable
          // Attempt to close socket
          close();
       }
-   }
-   Short getHandle(Session session)
-   {
-      return (Short) sessions.get(session);
    }
    
    void registerResponseHandler(Short handle, ResponseHandler handler)

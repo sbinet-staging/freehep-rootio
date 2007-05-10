@@ -155,4 +155,10 @@ public class XrootdURLConnection extends URLConnection
       openStreamCount--;
       if (openStreamCount == 0) disconnect();
    }
+        
+   protected void finalize() throws Throwable
+   {
+      disconnect();
+      super.finalize();
+   }
 }

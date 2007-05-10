@@ -37,7 +37,7 @@ class Session
       this.userName = userName;
       Multiplexor multiplexor = connectTo(host,port,userName);
       this.multiplexor = multiplexor;
-      this.handle = multiplexor.getHandle(this);
+      this.handle = multiplexor.allocate(this);
    }
    /**
     * Open a host and connect to it without any side effects
@@ -54,8 +54,7 @@ class Session
          {
             InetAddress address = addresses[i];
             ConnectionDescriptor desc = new ConnectionDescriptor(address,port,userName);
-            Multiplexor multiplexor = Multiplexor.allocate(desc,this);
-            return multiplexor;
+            return Multiplexor.allocate(desc);
          }
          catch (IOException x)
          {
@@ -84,9 +83,13 @@ class Session
       multiplexor.deregisterResponseHandler(handle);
       close();
       this.multiplexor = multiplexor;
-      this.handle = multiplexor.getHandle(this);
+      this.handle = multiplexor.allocate(this);
       multiplexor.registerResponseHandler(handle,handler);
       handler.sendMessage();
+   }
+   Short getHandle()
+   {
+      return handle;
    }
    
    synchronized void close() throws IOException
