@@ -186,7 +186,7 @@ class Session
             int rlen = response.getLength();
             byte[] data = new byte[rlen];
             response.getInputStream().readFully(data);
-            result = new String(data,0,rlen-1);
+            result = new String(data,0,rlen);
             responseComplete();
          }
          void sendMessage() throws IOException
