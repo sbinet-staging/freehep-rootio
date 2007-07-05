@@ -37,4 +37,7 @@ public interface TDirectory extends hep.io.root.RootObject, TNamed
    TKey getKeyForTitle(String title);
 
    int nKeys();
+   
+   boolean hasKey(String name, int cycle);
+   boolean hasKey(String name);
 }

@@ -4,7 +4,7 @@ import hep.io.root.RootClassNotFound;
 import hep.io.root.RootFileReader;
 import hep.io.root.RootObject;
 import hep.io.root.daemon.RootAuthenticator;
-import hep.io.root.daemon.RootURLStreamFactory;
+import hep.io.root.daemon.xrootd.XrootdURLStreamFactory;
 import hep.io.root.interfaces.TKey;
 import hep.io.root.interfaces.TNamed;
 import java.awt.BorderLayout;
@@ -122,7 +122,7 @@ public class RootObjectBrowser extends JPanel implements TreeSelectionListener
       if ((argv.length == 1) && argv[0].startsWith("-"))
          usage();
 
-      URL.setURLStreamHandlerFactory(new RootURLStreamFactory());
+      URL.setURLStreamHandlerFactory(new XrootdURLStreamFactory());
       
       JFrame frame = new JFrame("Root Object Browser");
       RootObjectBrowser browser = new RootObjectBrowser();

@@ -1,9 +1,9 @@
 package hep.io.root.daemon.xrootd;
 
+import hep.io.root.daemon.RootStreamHandler;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.URLStreamHandler;
 
 /**
  * A stream handler for files opened with the root protocol.
@@ -12,17 +12,17 @@ import java.net.URLStreamHandler;
  * constructor.
  * @author Tony Johnson
  */
-public class XrootdStreamHandler extends URLStreamHandler
+public class XrootdStreamHandler extends RootStreamHandler
 {
-   
    protected URLConnection openConnection(URL uRL) throws IOException
    {
-      return new XrootdURLConnection(uRL);
-   }
-   
-   protected int getDefaultPort()
-   {
-      return XrootdProtocol.defaultPort;
-   }
-   
+      try
+      {
+         return new XrootdURLConnection(uRL);
+      }
+      catch (Exception x)
+      {
+         return super.openConnection(uRL);
+      }
+   }   
 }

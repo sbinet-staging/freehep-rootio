@@ -393,7 +393,17 @@ public class RootFileReader implements TFile
    {
       return dir.nKeys();
    }
+   
+   public boolean hasKey(String name, int cycle)
+   {
+      return dir.hasKey(name,cycle);
+   }
 
+   public boolean hasKey(String name)
+   {
+      return dir.hasKey(name);
+   }
+   
    /**
     * Get the StreamerInfo
     */
@@ -421,4 +431,5 @@ public class RootFileReader implements TFile
       System.out.println("Version $Id$");
       welcome = true;
    }
+
 }

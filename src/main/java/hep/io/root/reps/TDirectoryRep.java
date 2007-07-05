@@ -62,6 +62,11 @@ public abstract class TDirectoryRep extends AbstractRootObject implements TDirec
          return key;
       throw new RuntimeException("Key " + name + " not found in " + fHeader.getName());
    }
+   
+   public boolean hasKey(String name)
+   {
+      return hash.containsKey(name);
+   }
 
    public TKey getKey(String name, int cycle)
    {
@@ -69,6 +74,11 @@ public abstract class TDirectoryRep extends AbstractRootObject implements TDirec
       if (key != null)
          return key;
       throw new RuntimeException("Key " + name + ";" + cycle + " not found in " + fHeader.getName());
+   }
+   
+   public boolean hasKey(String name, int cycle)
+   {
+      return hash.containsKey(name + ";" + cycle);
    }
 
    public TKey getKeyForTitle(String title)
