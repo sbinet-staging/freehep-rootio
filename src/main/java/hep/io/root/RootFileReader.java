@@ -56,10 +56,13 @@ public class RootFileReader implements TFile
     * <li>user -- The user name to use
     * <li>password -- The password to use
     * </ul>
+    * The shared parameter may be used to pass an already open RootFileReader. In this case
+    * the files will share the same cache or loaded RootClass's. This will speed up opening 
+    * many files, but will only work if the files contain the same root classes.
     */
-   public RootFileReader(URL url, Map options) throws IOException
+   public RootFileReader(URL url, Map options, RootFileReader shared) throws IOException
    {
-      if (url.getProtocol().equals("file")) init(new File(url.getFile()));
+      if (url.getProtocol().equals("file")) init(new File(url.getFile()),shared);
       else
       {
          URLConnection connection = url.openConnection();
@@ -80,7 +83,7 @@ public class RootFileReader implements TFile
          }
          
          InputStream source = connection.getInputStream();
-         if (source instanceof DaemonInputStream) init(new RootDaemonInputStream((DaemonInputStream) source,this));
+         if (source instanceof DaemonInputStream) init(new RootDaemonInputStream((DaemonInputStream) source,this),shared);
          else
          {
             throw new IOException("Unsupported protocol: "+url.getProtocol() );
@@ -100,6 +103,10 @@ public class RootFileReader implements TFile
          }
       }
    }
+   public RootFileReader(URL url, Map options) throws IOException
+   {
+      this(url,null,null);
+   }
    /**
     * Open a file specified by URL for reading with the default options.
     */
@@ -116,7 +123,7 @@ public class RootFileReader implements TFile
     */
    public RootFileReader(String file) throws IOException
    {
-      init(new File(file));
+      init(new File(file),null);
    }
 
    /**
@@ -125,16 +132,20 @@ public class RootFileReader implements TFile
     */
    public RootFileReader(File file) throws IOException
    {
-      init(file);
+      init(file,null);
    }
-   private void init(File file) throws IOException
+   public RootFileReader(File file, RootFileReader shared) throws IOException
+   {
+      init(file,shared);
+   }
+   private void init(File file, RootFileReader shared) throws IOException
    {
       RootRandomAccessFile raf = new RootRandomAccessFile(file, this);
       RootInput in = raf;
       if (System.getProperty("useNIO") != null) in = new FastInputStream(this, raf);
-      init(in);
+      init(in, shared);
    }
-   private void init(RootInput in) throws IOException
+   private void init(RootInput in, RootFileReader shared) throws IOException
    {
       try
       {
@@ -208,8 +219,11 @@ public class RootFileReader implements TFile
 
          if (fSeekInfo == 0) recover(fBEGIN);
          
-         // Ok, now read the StreamerInfo key, if present
-         if (fSeekInfo != 0)
+         if (shared != null)
+         {
+            this.factory = shared.factory;
+         }
+         else if (fSeekInfo != 0)
          {
             in.setPosition(fSeekInfo);
             streamerInfo = (TKey) in.readObject("TKey");
@@ -320,6 +334,16 @@ public class RootFileReader implements TFile
    {
       return dir.getKeyForTitle(name);
    }
+   
+      public boolean hasKey(String name, int cycle)
+   {
+      return dir.hasKey(name,cycle);
+   }
+
+   public boolean hasKey(String name)
+   {
+      return dir.hasKey(name);
+   }
 
    public String getName()
    {
@@ -393,17 +417,7 @@ public class RootFileReader implements TFile
    {
       return dir.nKeys();
    }
-   
-   public boolean hasKey(String name, int cycle)
-   {
-      return dir.hasKey(name,cycle);
-   }
 
-   public boolean hasKey(String name)
-   {
-      return dir.hasKey(name);
-   }
-   
    /**
     * Get the StreamerInfo
     */
@@ -431,5 +445,4 @@ public class RootFileReader implements TFile
       System.out.println("Version $Id$");
       welcome = true;
    }
-
 }
