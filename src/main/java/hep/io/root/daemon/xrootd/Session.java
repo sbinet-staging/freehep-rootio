@@ -80,7 +80,7 @@ class Session
          return;
       }
       
-      multiplexor.deregisterResponseHandler(handle);
+      this.multiplexor.deregisterResponseHandler(handle);
       close();
       this.multiplexor = multiplexor;
       this.handle = multiplexor.allocate(this);

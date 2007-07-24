@@ -207,8 +207,7 @@ class Multiplexor implements Runnable
       try
       {
          for (;!thread.currentThread().isInterrupted();)
-         {
-            
+         {            
             response.read();
             int status = response.getStatus();
             Short handle = response.getHandle();
@@ -218,7 +217,7 @@ class Multiplexor implements Runnable
                handler = (ResponseHandler) responseMap.get(handle);
             }
             
-            if (handler == null && status != XrootdProtocol.kXR_attn) throw new IOException("No handler found for handle "+handle);
+            if (handler == null && status != XrootdProtocol.kXR_attn) throw new IOException(descriptor+" No handler found for handle "+handle);
             if (status == XrootdProtocol.kXR_error)
             {
                DataInputStream in = response.getInputStream();
@@ -267,6 +266,7 @@ class Multiplexor implements Runnable
                byte[] message = new byte[response.getLength()-4];
                in.readFully(message);
                String host = new String(message,0,message.length);
+               logger.info(descriptor+" redirect: "+host+" "+port);
                handler.handleRedirect(host,port);
             }
             else if (status == XrootdProtocol.kXR_attn)
