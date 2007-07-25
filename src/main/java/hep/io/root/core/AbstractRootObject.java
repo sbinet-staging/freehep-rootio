@@ -17,6 +17,7 @@ import java.lang.reflect.*;
  */
 public abstract class AbstractRootObject implements RootObject
 {
+   private static boolean debug = System.getProperty("debugRoot") != null;
    private int length;
    private long expectedEnd = 0;
 
@@ -57,20 +58,29 @@ public abstract class AbstractRootObject implements RootObject
       }
       catch (IOException x)
       {
-         dump(System.out);
-         x.printStackTrace();
+         if (debug)
+         {
+            dump(System.out);
+            x.printStackTrace();
+         }
          throw x;
       }
       catch (RuntimeException x)
       {
-         dump(System.out);
-         x.printStackTrace();
+         if (debug)
+         {
+            dump(System.out);
+            x.printStackTrace();
+         }
          throw x;
       }
       catch (Error x)
       {
-         dump(System.out);
-         x.printStackTrace();
+         if (debug)
+         {
+            dump(System.out);
+            x.printStackTrace();
+         }
          throw x;
       }
    }
