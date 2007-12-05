@@ -105,7 +105,7 @@ public class RootFileReader implements TFile
    }
    public RootFileReader(URL url, Map options) throws IOException
    {
-      this(url,null,null);
+      this(url,options,null);
    }
    /**
     * Open a file specified by URL for reading with the default options.
