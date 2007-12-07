@@ -22,23 +22,6 @@
       <plugins>
          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-one-plugin</artifactId>
-            <extensions>true</extensions>
-            <configuration>
-              <remoteRepositoryUrl>scpexe://svn.freehep.org/nfs/slac/g/jas/maven</remoteRepositoryUrl>
-              <remoteRepositoryId>freehep-maven1-deploy</remoteRepositoryId>
-            </configuration>
-            <executions>
-               <execution>
-                  <goals>
-                     <goal>install-maven-one-repository</goal>
-                     <goal>deploy-maven-one-repository</goal>
-                  </goals>
-               </execution>
-            </executions>
-         </plugin>
-         <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-jar-plugin</artifactId>
             <configuration>
                <archive>
