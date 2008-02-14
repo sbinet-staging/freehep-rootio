@@ -91,24 +91,33 @@ class Multiplexor implements Runnable
    void free(Session session)
    {
       int handle;
+      int nOpen;
       synchronized (handles)
       {
          handle = session.getHandle().intValue();
          handles.clear(handle);
+         nOpen = handles.cardinality();
          
-         if (handles.cardinality() == 0)
+         if (nOpen == 0)
          {
             idleTimer = new TimerTask()
             {
                public void run()
                {
-                  close();
+                   try
+                   {
+                      close();
+                   }
+                   catch (Throwable t)
+                   {
+                       logger.log(Level.SEVERE,"Unhandled exception while closing multiplexor ",t);
+                   }
                }
             };
             timer.schedule(idleTimer,MAX_IDLE);
          }
       }
-      logger.fine(descriptor+" Free session "+handle);
+      logger.fine(descriptor+" Free session "+handle+" nOpen="+nOpen);              
    }
    private void close()
    {
@@ -126,6 +135,7 @@ class Multiplexor implements Runnable
       {
          socketClosed = true;
          socket.close();
+         logger.fine(descriptor+" Closed socket");              
       }
       catch (IOException x)
       {
@@ -206,7 +216,7 @@ class Multiplexor implements Runnable
    {
       try
       {
-         for (;!thread.currentThread().isInterrupted();)
+         for (;!thread.isInterrupted();)
          {            
             response.read();
             int status = response.getStatus();
@@ -217,7 +227,19 @@ class Multiplexor implements Runnable
                handler = (ResponseHandler) responseMap.get(handle);
             }
             
-            if (handler == null && status != XrootdProtocol.kXR_attn) throw new IOException(descriptor+" No handler found for handle "+handle);
+            if (handler == null && status != XrootdProtocol.kXR_attn)
+            { 
+                if (status == XrootdProtocol.kXR_error)
+                {
+                    DataInputStream in = response.getInputStream();
+                    int rc = in.readInt();
+                    byte[] message = new byte[response.getLength()-4];
+                    in.readFully(message);
+                    logger.log(Level.SEVERE,descriptor+" Out-of-band error "+rc+": "+new String(message,0,message.length-1));
+                    continue; // Just carry on in this case??
+                }
+                throw new IOException(descriptor+" No handler found for handle "+handle+" (status="+status+")");
+            }
             if (status == XrootdProtocol.kXR_error)
             {
                DataInputStream in = response.getInputStream();
@@ -257,7 +279,7 @@ class Multiplexor implements Runnable
                int seconds = in.readInt();
                byte[] message = new byte[response.getLength()-4];
                in.readFully(message);
-               logger.info(descriptor+" waitresp: "+new String(message,0,message.length)+" seconds="+seconds);                
+               logger.fine(descriptor+" waitresp: "+new String(message,0,message.length)+" seconds="+seconds);                
             }
             else if (status == XrootdProtocol.kXR_redirect)
             {
@@ -266,7 +288,7 @@ class Multiplexor implements Runnable
                byte[] message = new byte[response.getLength()-4];
                in.readFully(message);
                String host = new String(message,0,message.length);
-               logger.info(descriptor+" redirect: "+host+" "+port);
+               logger.fine(descriptor+" redirect: "+host+" "+port);
                handler.handleRedirect(host,port);
             }
             else if (status == XrootdProtocol.kXR_attn)
@@ -302,12 +324,13 @@ class Multiplexor implements Runnable
       {
          // prevent any new requests
          socketClosed = true;
-         logger.log(Level.WARNING,"Unexpected IO exception on socket",x);
+         logger.log(Level.WARNING,descriptor+" Unexpected IO exception on socket",x);
          // Notify anyone listening for a response that we are dead
          List waiting = new ArrayList(responseMap.values());
          for (Iterator i = waiting.iterator(); i.hasNext(); )
          {
             ResponseHandler handler = (ResponseHandler) i.next();
+            logger.fine(descriptor+" sending handleSocketError to "+handler);
             handler.handleSocketError(x);
          }
          // Attempt to close socket

@@ -24,6 +24,7 @@ public class RootClassLoader extends ClassLoader
    private Map classMap = new HashMap();
    private Map map = new HashMap();
    private RootFileReader rfr;
+   private static Object bcel = new Object();
 
    RootClassLoader(RootFileReader rfr)
    {
@@ -52,7 +53,12 @@ public class RootClassLoader extends ClassLoader
 
          String className = name.substring(pos + 1);
          GenericRootClass gc = (GenericRootClass) rfr.getFactory().create(className);
-         JavaClass jc = builder.build(gc);
+         JavaClass jc;
+         // BCEL is not thread safe, so class building must be synchronized
+         synchronized (bcel)
+         {
+             jc = builder.build(gc);
+         }
 
          if (debugRoot)
          {

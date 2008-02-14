@@ -80,9 +80,9 @@
     </profiles>
    <dependencies>
       <dependency>
-         <groupId>bcel</groupId>
+         <groupId>org.apache.bcel</groupId>
          <artifactId>bcel</artifactId>
-         <version>5.1</version>
+         <version>5.2</version>
       </dependency>
       <dependency>
          <groupId>org.freehep</groupId>

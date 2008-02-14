@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * A handle is associated with each session, so that they can multiplex on a single
@@ -20,6 +21,7 @@ import java.util.List;
  */
 class Session
 {
+   private static final int WAIT_TIMEOUT = Integer.getInteger("hep.io.root.deamon.xrootd.timeout", 3000).intValue();
    private String userName;
    private Short handle;
    private Multiplexor multiplexor;
@@ -28,17 +30,24 @@ class Session
    private ByteArrayOutputStream bos = new ByteArrayOutputStream(20);
    private DataOutputStream out = new DataOutputStream(bos);
    private IOException exception = null;
+   private boolean flag;
+   private String initialHost;
+   private int initialPort;
+   private static Logger logger = Logger.getLogger("hep.io.root.daemon.xrootd");
    
    /**
     * Many sessions can share a single XrootProtocol
     */
    public Session(String host, int port, String userName) throws IOException
    {
+      this.initialHost = host;
+      this.initialPort = port;
       this.userName = userName;
-      Multiplexor multiplexor = connectTo(host,port,userName);
-      this.multiplexor = multiplexor;
-      this.handle = multiplexor.allocate(this);
+      Multiplexor newMultiplexor = connectTo(host,port,userName);
+      this.multiplexor = newMultiplexor;
+      this.handle = newMultiplexor.allocate(this);
    }
+
    /**
     * Open a host and connect to it without any side effects
     */
@@ -65,12 +74,18 @@ class Session
       // We only get here if the host exists but has no addresses, probably not possible?
       throw new UnknownHostException("Host "+host+" has no known inet addresses");
    }
+
+   void redirectToInitial(ResponseHandler handler) throws IOException
+   {
+       redirectConnection(handler,initialHost,initialPort);
+   }
+   
    void redirectConnection(ResponseHandler handler, String host, int port) throws IOException
    {
-      Multiplexor multiplexor;
+      Multiplexor newMultiplexor;
       try
       {
-         multiplexor = connectTo(host,port,userName);
+         newMultiplexor = connectTo(host,port,userName);
       }
       catch (Exception x)
       {
@@ -82,9 +97,9 @@ class Session
       
       this.multiplexor.deregisterResponseHandler(handle);
       close();
-      this.multiplexor = multiplexor;
-      this.handle = multiplexor.allocate(this);
-      multiplexor.registerResponseHandler(handle,handler);
+      this.multiplexor = newMultiplexor;
+      this.handle = newMultiplexor.allocate(this);
+      newMultiplexor.registerResponseHandler(handle,handler);
       handler.sendMessage();
    }
    Short getHandle()
@@ -97,12 +112,13 @@ class Session
       if (multiplexor != null)
       {
          multiplexor.free(this);
+         multiplexor = null;
          handle = null;
       }
    }
    synchronized List dirList(final String path) throws IOException
    {
-      final List result = new ArrayList();
+      final List dirListResult = new ArrayList();
       ResponseHandler handler = new ResponseHandler(this)
       {
          void handleResponse(Multiplexor.Response response) throws IOException
@@ -120,7 +136,7 @@ class Session
                char c = files.charAt(i);
                if (c =='\n' || c == '\0' )
                {
-                  result.add(files.substring(pos,i));
+                  dirListResult.add(files.substring(pos,i));
                   if (c == '\0') break;
                   pos = i+1;
                }
@@ -139,7 +155,7 @@ class Session
       multiplexor.registerResponseHandler(handle,handler);
       handler.sendMessage();
       waitForResponse();
-      return result;
+      return dirListResult;
    }
    
    synchronized void ping() throws IOException
@@ -325,26 +341,35 @@ class Session
    
    synchronized void responseComplete()
    {
-      multiplexor.deregisterResponseHandler(handle);
-      exception = null;
-      Session.this.notify();
+      responseComplete(null);
    }
    synchronized void responseComplete(IOException x)
    {
       multiplexor.deregisterResponseHandler(handle);
       exception = x;
+      flag = true;
       notify();
    }
    private void waitForResponse() throws IOException
    {
       try
       {
-         wait();
+         flag = false;
+         for (int i=0; !flag;)
+         {
+           wait(WAIT_TIMEOUT);
+           if (!flag)
+           {
+               i+=WAIT_TIMEOUT;
+               logger.warning("Waiting for response for "+i+"ms");
+               if (i>=10*WAIT_TIMEOUT) throw new IOException("Timeout waiting for response after "+i+"ms");   
+           }
+         }
          if (exception != null)
          {
             IOException io = new IOException(exception.getMessage());
             // preserve original exception since it occured on another thread
-            // otherwise loose useful stacktrack info.
+            // otherwise loose useful stacktrace info.
             io.initCause(exception);
             throw io;
          }
