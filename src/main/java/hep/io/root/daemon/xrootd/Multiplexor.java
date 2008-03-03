@@ -366,6 +366,11 @@ class Multiplexor implements Runnable
       this.message.send(handle,message,extra,string);
    }
    
+   public String toString() 
+   {
+      return descriptor.toString();
+   }
+   
    private static class Message
    {
       private OutputStream data;
