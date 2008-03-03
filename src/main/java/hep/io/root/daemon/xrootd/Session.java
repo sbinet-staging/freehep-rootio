@@ -22,6 +22,7 @@ import java.util.logging.Logger;
 class Session
 {
    private static final int WAIT_TIMEOUT = Integer.getInteger("hep.io.root.deamon.xrootd.timeout", 3000).intValue();
+   private static final int WAIT_LIMIT = Integer.getInteger("hep.io.root.deamon.xrootd.waitLimit", 1000).intValue();
    private String userName;
    private Short handle;
    private Multiplexor multiplexor;
@@ -154,7 +155,7 @@ class Session
       
       multiplexor.registerResponseHandler(handle,handler);
       handler.sendMessage();
-      waitForResponse();
+      waitForResponse("dirList");
       return dirListResult;
    }
    
@@ -169,7 +170,7 @@ class Session
       };
       multiplexor.registerResponseHandler(handle,handler);
       handler.sendMessage();
-      waitForResponse();
+      waitForResponse("ping");
    }
    synchronized String[] stat(final String path) throws IOException
    {
@@ -190,7 +191,7 @@ class Session
       };
       multiplexor.registerResponseHandler(handle,handler);
       handler.sendMessage();
-      waitForResponse();
+      waitForResponse("stat");
       return (String[]) result;
    }
    synchronized String query(final int queryType, final String path) throws IOException
@@ -215,7 +216,7 @@ class Session
       for (int i=0; i<14; i++) out.writeByte(0);
       multiplexor.registerResponseHandler(handle,handler);
       handler.sendMessage();
-      waitForResponse();
+      waitForResponse("query");
       return (String) result;
    }
    synchronized String prepare(String[] path, int options, int priority) throws IOException
@@ -249,7 +250,7 @@ class Session
       
       multiplexor.registerResponseHandler(handle,handler);
       handler.sendMessage();
-      waitForResponse();
+      waitForResponse("prepare");
       return (String) result;
    }
    synchronized int open(final String path, final int mode, final int options) throws IOException
@@ -275,7 +276,7 @@ class Session
       for (int i=0; i<12; i++) out.writeByte(0);
       out.flush();
       handler.sendMessage();
-      waitForResponse();
+      waitForResponse("open");
       return ((Number) result).intValue();
    }
    synchronized void close(int fileHandle) throws IOException
@@ -293,7 +294,7 @@ class Session
       for (int i=0; i<12; i++) out.writeByte(0);
       out.flush();
       handler.sendMessage();
-      waitForResponse();
+      waitForResponse("close");
    }
    synchronized int read(int fileHandle, byte[] buffer, long fileOffset) throws IOException
    {
@@ -329,7 +330,7 @@ class Session
       out.writeInt(size);
       out.flush();
       handler.sendMessage();
-      waitForResponse();
+      waitForResponse("read");
       return ((Number) result).intValue();
    }
    
@@ -350,7 +351,7 @@ class Session
       flag = true;
       notify();
    }
-   private void waitForResponse() throws IOException
+   private void waitForResponse(String reason) throws IOException
    {
       try
       {
@@ -361,8 +362,8 @@ class Session
            if (!flag)
            {
                i+=WAIT_TIMEOUT;
-               logger.warning("Waiting for response for "+i+"ms");
-               if (i>=10*WAIT_TIMEOUT) throw new IOException("Timeout waiting for response after "+i+"ms");   
+               logger.warning("Waiting for response for "+(i/1000)+" secs " + reason + multiplexor);
+               if (i>=WAIT_LIMIT*WAIT_TIMEOUT) throw new IOException("Timeout waiting for response after "+(i/1000)+"secs");   
            }
          }
          if (exception != null)
