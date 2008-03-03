@@ -50,10 +50,10 @@ public class XrootdConnectionTest extends TestCase
    }
    public void testRedirect()  throws MalformedURLException, IOException
    {
-      int expectedLength = 7251570;
+      int expectedLength = 1889528;
       // Fixme: This currently fails outside SLAC. Maybe we can teach the redirector about the test data
       if (!isAtSLAC()) return;
-      URL url = new URL(null,"xroot://glast-rdr.slac.stanford.edu//glast/mc/DC2/ChickenLittle-GR-v7r3p24-2/029/615/ChickenLittle-GR-v7r3p24-2_029615_mc_MC.root", new XrootdStreamHandler());
+      URL url = new URL(null,"root://glast-rdr.slac.stanford.edu//glast/mc/ServiceChallenge/allGamma-GR-v13r9p3-Lyon/merit/allGamma-GR-v13r9p3-Lyon-000000-merit.root", new XrootdStreamHandler());
       URLConnection conn = url.openConnection();
       conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
       InputStream in = conn.getInputStream();
@@ -79,7 +79,7 @@ public class XrootdConnectionTest extends TestCase
    {
       // Fixme: This currently fails outside SLAC. Maybe we can teach the redirector about the test data
       if (!isAtSLAC()) return;
-      URL url = new URL(null,"xroot://glast-rdr.slac.stanford.edu//glast/mc/DC2/ChickenLittle-GR-v7r3p24-2/029/615/ChickenLittle-GR-v7r3p24-2_029615_mc_MC.root", new XrootdStreamHandler());
+      URL url = new URL(null,"root://glast-rdr.slac.stanford.edu//glast/mc/ServiceChallenge/allGamma-GR-v13r9p3-Lyon/merit/allGamma-GR-v13r9p3-Lyon-000000-merit.root", new XrootdStreamHandler());
       URLConnection conn = url.openConnection();
       conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME_ANONYMOUS);
       conn.connect();
@@ -114,7 +114,7 @@ public class XrootdConnectionTest extends TestCase
    public void testError6() throws MalformedURLException, IOException
    {
       
-      URL url = new URL(null,"xroot://glast-rdr.slac.stanford.edu/NonExisTantFile", new XrootdStreamHandler());
+      URL url = new URL(null,"xroot://glast-rdr.slac.stanford.edu.slac.stanford.edu/NonExisTantFile", new XrootdStreamHandler());
       URLConnection conn = url.openConnection();
       conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME,"anonymous");
       try
