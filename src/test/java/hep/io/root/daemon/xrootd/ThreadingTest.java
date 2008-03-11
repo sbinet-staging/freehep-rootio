@@ -25,6 +25,7 @@ public class ThreadingTest extends TestCase {
     }
 
     public void testThread1() throws InterruptedException, ExecutionException {
+        if (!XrootdConnectionTest.isAtSLAC()) return;
         List<TestFile> files = new ArrayList<TestFile>();
         Random r = new Random(12345);
         for (int i=0; i<100; i++)

@@ -32,6 +32,14 @@
                </archive>
             </configuration>
          </plugin>
+         <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>RELEASE</version>
+                <configuration>
+                    <source>1.5</source>
+                    <target>1.5</target>
+                </configuration>
+            </plugin>
       </plugins>
    </build>
    <profiles>

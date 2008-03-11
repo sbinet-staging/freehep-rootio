@@ -120,6 +120,12 @@ public class XrootdURLConnection extends URLConnection
       return (int) fSize;
    }
    
+   public long getLongContentLength()
+   {
+      if (session == null) return -1;
+      return fSize;
+   }
+   
    public long getLastModified()
    {
       if (session == null) return 0;
