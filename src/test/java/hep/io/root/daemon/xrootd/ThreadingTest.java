@@ -76,7 +76,7 @@ public class ThreadingTest extends TestCase {
                     CRC32 cs = new CRC32();
                     cs.update(buffer);
                     long cksum = cs.getValue();
-                    System.out.println(file+" cksum="+cksum);
+                    //System.out.println(file+" cksum="+cksum);
                     if (result == 0) result = cksum;
                     else assertEquals(result, cksum);
                 } finally {
