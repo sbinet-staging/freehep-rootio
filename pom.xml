@@ -33,59 +33,72 @@
             </configuration>
          </plugin>
          <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>RELEASE</version>
-                <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
-                </configuration>
-            </plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>RELEASE</version>
+            <configuration>
+               <source>1.5</source>
+               <target>1.5</target>
+            </configuration>
+         </plugin>
       </plugins>
    </build>
+   <reporting>
+      <plugins>
+         <plugin>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+               <source>1.5</source>
+               <links>
+                  <link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
+               </links>
+            </configuration>
+         </plugin>       
+      </plugins>
+   </reporting>
    <profiles>
-        <profile>
-            <id>netbeans-public</id>
-            <activation>
-                <property>
-                    <name>netbeans.execution</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-jar-plugin</artifactId>
+      <profile>
+         <id>netbeans-public</id>
+         <activation>
+            <property>
+               <name>netbeans.execution</name>
+               <value>true</value>
+            </property>
+         </activation>
+         <build>
+            <plugins>
+               <plugin>
+                  <artifactId>maven-jar-plugin</artifactId>
+                  <configuration>
+                     <archive>
+                        <manifest>
+                           <addClasspath>true</addClasspath>
+                           <classpathPrefix>lib</classpathPrefix>
+                           <mainClass>hep.io.root.util.RootObjectBrowser</mainClass>
+                        </manifest>
+                     </archive>
+                  </configuration>
+               </plugin>
+               <plugin>
+                  <artifactId>maven-assembly-plugin</artifactId>
+                  <version>2.1</version>
+                  <executions>
+                     <execution>
+                        <id>nb</id>
+                        <phase>package</phase>
+                        <goals>
+                           <goal>directory</goal>
+                        </goals>
                         <configuration>
-                            <archive>
-                                <manifest>
-                                    <addClasspath>true</addClasspath>
-                                    <classpathPrefix>lib</classpathPrefix>
-                                    <mainClass>hep.io.root.util.RootObjectBrowser</mainClass>
-                                </manifest>
-                            </archive>
+                           <descriptor>${basedir}/src/main/assemblies/netbeans-run.xml</descriptor>
+                           <finalName>executable</finalName>
                         </configuration>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.1</version>
-                        <executions>
-                            <execution>
-                                <id>nb</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>directory</goal>
-                                </goals>
-                                <configuration>
-                                    <descriptor>${basedir}/src/main/assemblies/netbeans-run.xml</descriptor>
-                                    <finalName>executable</finalName>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
+                     </execution>
+                  </executions>
+               </plugin>
+            </plugins>
+         </build>
+      </profile>
+   </profiles>
    <dependencies>
       <dependency>
          <groupId>org.apache.bcel</groupId>
@@ -105,9 +118,9 @@
          <scope>test</scope>
       </dependency>
    </dependencies>
-
-  <scm>
-    <connection>scm:svn:svn://svn.freehep.org/svn/freehep/tags/freehep-rootio-2.0.3</connection>
-    <developerConnection>scm:svn:svn://svn.freehep.org/svn/freehep/tags/freehep-rootio-2.0.3</developerConnection>
-  </scm>
+   
+   <scm>
+      <connection>scm:svn:svn://svn.freehep.org/svn/freehep/tags/freehep-rootio-2.0.3</connection>
+      <developerConnection>scm:svn:svn://svn.freehep.org/svn/freehep/tags/freehep-rootio-2.0.3</developerConnection>
+   </scm>
 </project>
