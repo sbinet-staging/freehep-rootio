@@ -317,6 +317,10 @@ class Multiplexor implements Runnable
       {
          handleSocketException(x);
       }
+      catch (Throwable x)
+      {
+          logger.log(Level.SEVERE,descriptor+" multiplexor thread dead!",x);
+      }
    }
    private void handleSocketException(IOException x)
    {
