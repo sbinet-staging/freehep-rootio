@@ -464,37 +464,49 @@ class RootInputStream extends DataInputStream implements RootInput
    static RootInput slice(RootInput in, int size, int decompressedSize) throws IOException
    {
       // Currently we read the whole buffer before starting to decompress.
-      // It would be better to decompress each component as we read it.
-      byte[] buf = new byte[size];
-      in.readFixedArray(buf);
-      byte[] out = new byte[decompressedSize];
-      
-      int nout = 0;
-      int nin = 0;
-      while (nout < decompressedSize)
+      // It would be better to decompress each component as we read it, but perhaps
+      // not possible if we need to support random access into the unpacked array.
+      try
       {
-         boolean hasHeader = buf[0] == 'Z' && buf[1] == 'L';
-         Inflater inf = new Inflater(!hasHeader);
-         try
+         byte[] buf = new byte[size];
+         in.readFixedArray(buf);
+         byte[] out = new byte[decompressedSize];
+      
+         int nout = 0;
+         int nin = 0;
+         while (nout < decompressedSize)
          {
-            nin += 9;
-            inf.setInput(buf, nin, buf.length - nin);
-            int rc = inf.inflate(out, nout, out.length - nout);
-            nout += rc;
-            nin += inf.getTotalIn();
+            boolean hasHeader = buf[0] == 'Z' && buf[1] == 'L';
+            System.out.println("inf "+hasHeader+" "+nin+" "+nout);
+            Inflater inf = new Inflater(!hasHeader);
+            try
+            {
+               nin += 9;
+               inf.setInput(buf, nin, buf.length - nin);
+               int rc = inf.inflate(out, nout, out.length - nout);
+               if (rc==0) throw new IOException("Inflate unexpectedly returned 0 (perhaps OutOfMemory?)");
+               nout += rc;
+               nin += inf.getTotalIn();
+            }
+            finally
+            {
+               inf.end();
+            }
          }
-         catch (Exception x)
-         {
-            IOException xx = new IOException("Error during decompression (size="+size+"/"+decompressedSize+")");
-            xx.initCause(x);
-            throw xx;
-         }
-         finally
-         {
-            inf.end();
-         }
+         return new RootInputStream(new RootByteArrayInputStream(out, 0), in.getTop());
       }
-      return new RootInputStream(new RootByteArrayInputStream(out, 0), in.getTop());
+      catch (Exception x)
+      {
+         IOException xx = new IOException("Error during decompression (size="+size+"/"+decompressedSize+")");
+         xx.initCause(x);
+         throw xx;
+      }
+      catch (OutOfMemoryError x)
+      {
+         IOException xx = new IOException("Error during decompression (size="+size+"/"+decompressedSize+")");
+         xx.initCause(x);
+         throw xx;         
+      }
    }
    
    static double readTwistedDouble(RootInput in) throws IOException
