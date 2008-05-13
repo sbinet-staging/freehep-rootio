@@ -191,12 +191,39 @@ class Multiplexor implements Runnable
          out.writeByte(XrootdProtocol.kXR_asyncap | XrootdProtocol.XRD_CLIENT_CURRENTVER);
          out.writeByte(XrootdProtocol.kXR_useruser);
          out.flush();
-         sendMessage(new Short((short)0),XrootdProtocol.kXR_login,bos.toByteArray());
+         Short handle = Short.valueOf((short)0);
+         sendMessage(handle,XrootdProtocol.kXR_login,bos.toByteArray());
          response = new Response(in);
          response.read();
          int dlen = response.getLength();
          DataInputStream rin = response.getInputStream();
-         for (int i=0; i<dlen; i++) rin.read();
+         for (int i=0; i<Math.min(dlen,16); i++) rin.read();
+         if (dlen>16)
+         {
+             byte[] security = new byte[dlen-16];
+             rin.readFully(security);
+             //
+             //System.out.println("security="+new String(security));
+             // We should really call the security library here to deal with
+             // authentification. But no time so
+             String fakeResponse = "unix\u0000"+System.getProperty("user.name")+" "+System.getProperty("user.group","nogroup")+"\u0000";
+             sendMessage(handle,XrootdProtocol.kXR_auth,null,fakeResponse);
+             int status = response.read();
+             if (status == XrootdProtocol.kXR_error)
+             {
+                 in = response.getInputStream();
+                 int rc = in.readInt();
+                 byte[] errorMessage = new byte[response.getLength()-4];
+                 in.readFully(errorMessage);
+                 throw new IOException("Xrootd error "+rc+": "+new String(errorMessage,0,errorMessage.length-1));
+             }
+             else 
+             {
+                 dlen = response.getLength();
+                 rin = response.getInputStream();
+                 for (int i=0; i<dlen; i++) rin.read();
+             }
+         }
          
          // Start a thread which will listen for future responses
          // TODO: It would be better to use a single thread listening on all
