@@ -89,6 +89,7 @@ public abstract class TKeyRep extends AbstractRootObject implements TKey
 
    RootInput getData() throws IOException
    {
+      System.out.println("Get Data for TKey "+fName+" "+fClassName+" "+fNbytes +" "+fKeylen+" "+fObjlen);
       if ((fNbytes - fKeylen) < fObjlen)
       {
          RootInput slice = rin.slice(fNbytes - fKeylen, fObjlen);
