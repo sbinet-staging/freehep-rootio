@@ -17,11 +17,13 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Timer;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class Multiplexor implements Runnable
 {
    private static final int MAX_IDLE = 5000;
    private static Logger logger = Logger.getLogger("hep.io.root.daemon.xrootd");
+   private static AtomicInteger pseudoPid = new AtomicInteger(1);
    
    static
    {
@@ -183,7 +185,7 @@ class Multiplexor implements Runnable
          message = new Message(socket.getOutputStream());
          
          bos.reset();
-         out.writeInt(12345);
+         out.writeInt(pseudoPid.getAndIncrement());
          byte[] user = desc.getUserName().getBytes();
          for (int i=0; i<8; i++) out.writeByte(i<user.length ? user[i] : 0);
          out.writeByte(0);
