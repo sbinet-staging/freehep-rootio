@@ -477,7 +477,6 @@ class RootInputStream extends DataInputStream implements RootInput
          while (nout < decompressedSize)
          {
             boolean hasHeader = buf[0] == 'Z' && buf[1] == 'L';
-            System.out.println("inf "+hasHeader+" "+nin+" "+nout);
             Inflater inf = new Inflater(!hasHeader);
             try
             {
