@@ -169,9 +169,11 @@ public class RootFileReader implements TFile
             throw new IOException("hep.io.root package cannot read files created by Root before release 3.00/6 (" + fVersion + ")");
          if (debug)
             System.out.println("version=" + fVersion);
+         boolean fLargeFile = fVersion > 1000000;
+         fVersion %= 1000000;
 
          int fBEGIN = in.readInt();
-         if (fVersion > 1000000)
+         if (fLargeFile)
          {
              long fEND = in.readLong();
              long fSeekFree = in.readLong();
