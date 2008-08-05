@@ -2,7 +2,6 @@ package hep.io.root.daemon.xrootd;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.util.List;
 import junit.framework.TestCase;
 
@@ -36,16 +35,16 @@ public class XrootdSessionTest extends TestCase
       assertEquals(300000,l);
       handle.close(fh);
       
-      InputStream in = handle.openStream(dir+files.get(0),0,XrootdProtocol.kXR_open_read);
-      int p = 0;
-      for (;;)
-      {
-         int ll = in.read(result);
-         if (ll < 0) break;
-         p += ll;
-      }
-      in.close();
-      assertEquals(353216,p);
+//      InputStream in = handle.openStream(dir+files.get(0),0,XrootdProtocol.kXR_open_read);
+//      int p = 0;
+//      for (;;)
+//      {
+//         int ll = in.read(result);
+//         if (ll < 0) break;
+//         p += ll;
+//      }
+//      in.close();
+//      assertEquals(353216,p);
       
    }
    

@@ -14,11 +14,20 @@ import java.net.URLConnection;
  */
 public class XrootdStreamHandler extends RootStreamHandler
 {
+   private XrootdInputStreamFactory streamFactory;
+   public XrootdStreamHandler()
+   {
+       this(new XrootdInputStreamFactory());
+   }
+   public XrootdStreamHandler(XrootdInputStreamFactory factory)
+   {
+       this.streamFactory = factory;
+   }
    protected URLConnection openConnection(URL uRL) throws IOException
    {
       try
       {
-         return new XrootdURLConnection(uRL);
+         return new XrootdURLConnection(uRL, streamFactory);
       }
       catch (Exception x)
       {

@@ -1,6 +1,5 @@
 package hep.io.root.daemon.xrootd;
 
-import hep.io.root.daemon.DaemonInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -26,7 +25,6 @@ class Session
    private String userName;
    private Short handle;
    private Multiplexor multiplexor;
-   private int bufferSize = 32768;
    private Object result; // TODO: Ugly, do something better
    private ByteArrayOutputStream bos = new ByteArrayOutputStream(20);
    private DataOutputStream out = new DataOutputStream(bos);
@@ -171,6 +169,19 @@ class Session
       multiplexor.registerResponseHandler(handle,handler);
       handler.sendMessage();
       waitForResponse("ping");
+   }
+   synchronized void rm(final String path) throws IOException
+   {
+      ResponseHandler handler = new ResponseHandler(this)
+      {
+         void sendMessage() throws IOException
+         {
+            multiplexor.sendMessage(handle,XrootdProtocol.kXR_rm,null,path);
+         }
+      };
+      multiplexor.registerResponseHandler(handle,handler);
+      handler.sendMessage();
+      waitForResponse("rm");
    }
    synchronized String[] stat(final String path) throws IOException
    {
@@ -334,12 +345,6 @@ class Session
       return ((Number) result).intValue();
    }
    
-   DaemonInputStream openStream(String path, int mode, int options) throws IOException
-   {
-      int fh = open(path,mode,options);
-      return new XrootdInputStream(this,fh,bufferSize);
-   }
-   
    synchronized void responseComplete()
    {
       responseComplete(null);
@@ -381,24 +386,6 @@ class Session
          io.initCause(x);
          throw io;
       }
-   }
-   
-   /**
-    * Getter for property bufferSize.
-    * @return Value of property bufferSize.
-    */
-   public int getBufferSize()
-   {
-      return this.bufferSize;
-   }
-   
-   /**
-    * Setter for property bufferSize.
-    * @param bufferSize New value of property bufferSize.
-    */
-   public void setBufferSize(int bufferSize)
-   {
-      this.bufferSize = bufferSize;
    }
    
    protected void finalize() throws Throwable

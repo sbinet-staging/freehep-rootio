@@ -8,7 +8,7 @@ import java.io.IOException;
  * @author tonyj
  */
 
-class XrootdInputStream extends DaemonInputStream
+public class XrootdInputStream extends DaemonInputStream
 {
    private static int MAXGETSIZE = -1;
    
@@ -19,11 +19,12 @@ class XrootdInputStream extends DaemonInputStream
    private Session handle;
    private XrootdURLConnection connection;
    
-   XrootdInputStream(Session handle, int fh, int bufferSize)
+   public XrootdInputStream(XrootdURLConnection conn) throws IOException
    {
-      this.fh = fh;
-      this.handle = handle;
-      buffer = new byte[bufferSize];
+      this.connection = conn;
+      this.handle = conn.getSession();
+      this.fh = handle.open(conn.getURL().getFile(), 0, XrootdProtocol.kXR_open_read);
+      buffer = new byte[conn.getBufferSize()];
    }
    public int read() throws IOException
    {
@@ -111,9 +112,5 @@ class XrootdInputStream extends DaemonInputStream
    {
       close();
       super.finalize();
-   }
-   void setConnection(XrootdURLConnection connection)
-   {
-      this.connection = connection;
    }
 }

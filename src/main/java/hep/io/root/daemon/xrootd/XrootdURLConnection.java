@@ -21,7 +21,7 @@ public class XrootdURLConnection extends URLConnection
    private String username;
    private String password;
    private String auth; // authorization mode to use
-   private int bufferSize = 0;
+   private int bufferSize = 32768;
    
    private long date;
    private long fSize;
@@ -36,19 +36,21 @@ public class XrootdURLConnection extends URLConnection
 
    private Session session;
    private int openStreamCount;
+   private XrootdInputStreamFactory streamFactory;
 
-   XrootdURLConnection(URL url)
+   XrootdURLConnection(URL url, XrootdInputStreamFactory factory)
    {
       super(url);
+      this.streamFactory = factory;
    }
    public InputStream getInputStream() throws IOException
    {
       connect();
-      InputStream stream = session.openStream(url.getFile(),0,XrootdProtocol.kXR_open_read);
-      ((XrootdInputStream) stream).setConnection(this);
+      InputStream stream = streamFactory.createStream(this);
       openStreamCount++;
       return stream;
    }
+   
    public void connect() throws IOException
    {
       if (connected) return;
@@ -89,8 +91,6 @@ public class XrootdURLConnection extends URLConnection
       session = new Session(url.getHost(),url.getPort(),username);
       try
       {
-         if (bufferSize != 0) session.setBufferSize(bufferSize);
-
          // ToDo: This could be delayed until needed.
          String[] fstat = session.stat(url.getFile());
          fSize = Long.parseLong(fstat[1]);
@@ -154,7 +154,16 @@ public class XrootdURLConnection extends URLConnection
       else if (key.equalsIgnoreCase(XROOT_AUTHORIZATION_PASSWORD)) password = value;
       else if (key.equalsIgnoreCase(XROOT_AUTHORIZATION_SCHEME ))  auth = value;
       else if (key.equalsIgnoreCase(XROOT_BUFFER_SIZE)) bufferSize = Integer.parseInt(value);
-   }  
+   }
+
+    int getBufferSize() {
+      return bufferSize;
+    }
+
+    Session getSession() 
+    {
+        return session;
+    }
 
    void streamClosed() throws IOException
    {

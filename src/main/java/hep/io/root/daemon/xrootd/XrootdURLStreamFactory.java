@@ -15,9 +15,18 @@ import java.net.URLStreamHandlerFactory;
  */
 public class XrootdURLStreamFactory implements URLStreamHandlerFactory
 {
+   private URLStreamHandler handler;
+   public XrootdURLStreamFactory()
+   {
+       handler = new XrootdStreamHandler();
+   }
+   public XrootdURLStreamFactory(XrootdInputStreamFactory factory)
+   {
+       handler = new XrootdStreamHandler(factory);
+   }
    public URLStreamHandler createURLStreamHandler(String protocol)
    {
-      if (protocol.equals("root")) return new XrootdStreamHandler();
+      if (protocol.equals("root")) return handler;
       return null;
    }    
 }
