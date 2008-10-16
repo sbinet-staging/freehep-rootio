@@ -31,6 +31,13 @@ class XrootdProtocol
    final static int  kXR_admin   =  3020;
    final static int  kXR_prepare =  3021;
    final static int  kXR_statx   =  3022;
+   final static int  kXR_endsess =  3023;
+   final static int  kXR_bind    =  3024;
+   final static int  kXR_readv   =  3025;
+   final static int  kXR_verifyw =  3026;
+   final static int  kXR_locate  =  3027;
+   final static int  kXR_truncate=  3028;
+
    
    final static int  kXR_ok       = 0;
    final static int  kXR_oksofar  = 4000;
@@ -77,6 +84,12 @@ class XrootdProtocol
    final static int kXR_open_updt= 32;
    final static int kXR_async    = 64;
    final static int kXR_refresh  = 128;
+   final static int kXR_mkpath   = 256;
+   final static int kXR_open_apnd= 512;
+   final static int kXR_retstat  = 1024;
+   final static int kXR_replica  = 2048;
+   final static int kXR_ulterior = 4096;
+   final static int kXR_nowait   = 8192;
    
    final static int kXR_cancel = 1;
    final static int kXR_notify = 2;

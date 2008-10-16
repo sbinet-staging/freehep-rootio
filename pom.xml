@@ -121,4 +121,8 @@
       <connection>scm:svn:svn://svn.freehep.org/svn/freehep/tags/freehep-rootio-2.0.5</connection>
       <developerConnection>scm:svn:svn://svn.freehep.org/svn/freehep/tags/freehep-rootio-2.0.5</developerConnection>
    </scm>
+   
+   <properties>
+        <netbeans.hint.useExternalMaven>false</netbeans.hint.useExternalMaven>
+    </properties>
 </project>

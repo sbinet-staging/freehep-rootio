@@ -1,7 +1,7 @@
 package hep.io.root.daemon.xrootd;
 
+import hep.io.root.daemon.xrootd.StatOperation.FileStatus;
 import java.io.IOException;
-import java.net.InetAddress;
 import junit.framework.TestCase;
 
 /**
@@ -23,9 +23,7 @@ public class XrootdPrepareTest extends TestCase
       handle.ping();
       
       String file = "/glast/mc/DC2/ChickenLittle-GR-v7r3p24-2/029/614/ChickenLittle-GR-v7r3p24-2_029614_merit_merit.root";
-      String[] stat = handle.stat(file);
-      System.out.println(stat[2]);
-      
+      FileStatus status = handle.stat(file);      
       
       handle = new Session("glast-rdr.slac.stanford.edu",1094,"tonyj");
       handle.ping();
