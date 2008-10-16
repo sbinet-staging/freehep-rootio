@@ -38,12 +38,10 @@ class Message {
     }
 
     int send(short handle, DataOutput out) throws IOException {
-        logger.finer("->" + message);
+        logger.finest("->" + message);
         out.writeShort(handle);
         out.writeShort(message);
-        for (int i = 0; i < 16; i++) {
-            out.writeByte(extra == null || i >= extra.length ? 0 : extra[i]);
-        }
+        sendExtra(out);
         int messageLength = 24;
         if (string == null) {
             out.writeInt(0);
@@ -75,6 +73,19 @@ class Message {
     void writeShort(int i) {
         writeByte(i >>> 8);
         writeByte(i);        
+    }
+
+    /**
+     * This method can be overriden by classes that want to send the extra bytes
+     * in the header themselves. The method must write exactly 16 bytes to the 
+     * data output stream.
+     * @param out
+     * @throws java.io.IOException
+     */
+    void sendExtra(DataOutput out) throws IOException {
+        for (int i = 0; i < 16; i++) {
+            out.writeByte(extra == null || i >= extra.length ? 0 : extra[i]);
+        }
     }
         
 

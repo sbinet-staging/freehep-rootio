@@ -57,7 +57,7 @@ class Response {
         dataLength = in.readInt();
         data = null;
         dataRead = dataLength==0;
-        logger.finer("<-" + handle + " " + status + " " + dataLength);
+        logger.finest("<-" + handle + " " + status + " " + dataLength);
         return 8 + dataLength;
     }
 

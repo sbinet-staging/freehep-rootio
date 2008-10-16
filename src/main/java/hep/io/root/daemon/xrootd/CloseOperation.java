@@ -1,6 +1,8 @@
 package hep.io.root.daemon.xrootd;
 
 import hep.io.root.daemon.xrootd.Callback.DefaultCallback;
+import java.io.DataOutput;
+import java.io.IOException;
 
 /**
  * Close a previously opened file, communications path, or path group.
@@ -24,11 +26,26 @@ class CloseOperation extends Operation<Void> {
         return file.getDestination();
     }
 
+    @Override
+    Operation getPrerequisite() {
+        return new OpenOperation(file);
+    }
+    
     private static class CloseMessage extends Message {
 
+        private OpenFile file;
         CloseMessage(OpenFile file) {
             super(XrootdProtocol.kXR_close);
-            writeInt(file.getHandle());
+            this.file = file;
+        }
+        @Override
+        void sendExtra( DataOutput out) throws IOException {
+            // Note, we do things this way because the file handle may have changed
+            // since we were created, as a result of a redirect.
+            out.writeInt(file.getHandle());
+            out.writeInt(0);
+            out.writeInt(0);
+            out.writeInt(0);
         }
     }
 }

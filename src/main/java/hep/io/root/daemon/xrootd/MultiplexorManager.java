@@ -33,14 +33,10 @@ class MultiplexorManager implements Runnable {
             if (m.isIdle())
             {
                 i.remove();
-                try {
-                    mbs.unregisterMBean(getObjectNameForMultiplexor(m));
-                } catch (Exception x) {
-                    logger.log(Level.WARNING, "Could not unregister multiplexor mbean", x);
-                } 
+                unregisterMultiplexor(m);
                 // FIXME: This should be done asynchronously by queueing a task
                 m.close();
-                logger.log(Level.INFO,"Closed idle connection: "+m);
+                logger.log(Level.FINE,"Closed idle connection: "+m);
             }
         }
     }
@@ -50,6 +46,7 @@ class MultiplexorManager implements Runnable {
         if (result != null && result.isSocketClosed())
         {
             multiplexorMap.remove(result);
+            unregisterMultiplexor(result);
             result = null;
         }
         if (result == null)
@@ -58,11 +55,7 @@ class MultiplexorManager implements Runnable {
             {
                 result = new Multiplexor(destination);
                 multiplexorMap.put(destination,result);
-                try {
-                    mbs.registerMBean(new StandardMBean(result,MultiplexorMBean.class), getObjectNameForMultiplexor(result));
-                } catch (Exception x) {
-                    logger.log(Level.WARNING, "Could not register multiplexor mbean", x);
-                }
+                registerMultiplexor(result);
             }
             catch (IOException x) 
             {
@@ -75,5 +68,21 @@ class MultiplexorManager implements Runnable {
     private ObjectName getObjectNameForMultiplexor(Multiplexor m) throws MalformedObjectNameException
     {
         return new ObjectName("hep.io.root.daemon.xrootd:type=Multiplexor,name=" + m.toString().replace(":",";"));        
+    }
+
+    private void registerMultiplexor(Multiplexor result) {
+        try {
+            mbs.registerMBean(new StandardMBean(result, MultiplexorMBean.class), getObjectNameForMultiplexor(result));
+        } catch (Exception x) {
+            logger.log(Level.WARNING, "Could not register multiplexor mbean", x);
+        }
+    }
+
+    private void unregisterMultiplexor(Multiplexor m) {
+        try {
+            mbs.unregisterMBean(getObjectNameForMultiplexor(m));
+        } catch (Exception x) {
+            logger.log(Level.WARNING, "Could not unregister multiplexor mbean", x);
+        }
     }
 }
