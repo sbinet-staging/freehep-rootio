@@ -31,6 +31,11 @@ class CloseOperation extends Operation<Void> {
         return new OpenOperation(file);
     }
     
+    @Override
+    Multiplexor getMultiplexor() {
+        return file.getMultiplexor();
+    } 
+    
     private static class CloseMessage extends Message {
 
         private OpenFile file;

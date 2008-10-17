@@ -25,8 +25,12 @@ public class SimpleConsole {
         for (;;) {
             try {
                 String line = console.readLine("scalla%s>", session == null ? "" : "(" + session + ")");
-                if (line == null) break;
-                if (line.trim().length() == 0) continue;
+                if (line == null) {
+                    break;
+                }
+                if (line.trim().length() == 0) {
+                    continue;
+                }
                 String[] tokens = line.trim().split("\\s+");
                 String command = tokens[0];
                 if ("exit".equals(command)) {
@@ -81,10 +85,13 @@ public class SimpleConsole {
                     for (String file : result) {
                         console.printf("%s\n", file);
                     }
-                }
-                else
-                {
-                    console.printf("Unknown command: %s\n",command);
+                } else if ("open".equals(command)) {
+                    int handle = session.open(tokens[1], 0, XrootdProtocol.kXR_open_read);
+                    console.printf("file handle=%d\n", handle);
+                } else if ("close".equals(command)) {
+                    session.close(Integer.parseInt(tokens[1]));
+                } else {
+                    console.printf("Unknown command: %s\n", command);
                 }
 
             } catch (Exception x) {

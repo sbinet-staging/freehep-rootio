@@ -38,8 +38,7 @@ class OpenOperation extends Operation<OpenFile> {
 
         public OpenFile responseReady(Response response) throws IOException {
             int handle = response.getDataAsInt();
-            Destination destination = response.getDestination();
-            file.setHandleAndDestination(handle, destination);
+            file.setHandleAndDestination(handle, response.getDestination(), response.getMultiplexor());
             return file;
         }
     }

@@ -100,6 +100,11 @@ class Multiplexor implements MultiplexorMBean {
     {
         return getOutstandingResponseCount()==0 && getIdleTime()>MAX_IDLE;
     }
+    
+    Destination getDestination()
+    {
+        return descriptor;
+    }
 
     synchronized void sendMessage(Message message, ResponseListener listener) throws IOException {
         short id = allocateHandle();
@@ -180,7 +185,7 @@ class Multiplexor implements MultiplexorMBean {
         message.writeByte(XrootdProtocol.kXR_useruser);
         message.send((short) 0, out);
 
-        response = new Response(desc,in);
+        response = new Response(this,in);
         response.read();
 
         int dlen = response.getLength();

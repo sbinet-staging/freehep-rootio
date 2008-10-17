@@ -11,6 +11,7 @@ class OpenFile {
 
     private int handle;
     private Destination destination;
+    private Multiplexor multiplexor;
     private String path;
     private int mode;
     private int options;
@@ -29,10 +30,15 @@ class OpenFile {
         return destination;
     }
     
-    void setHandleAndDestination(int handle, Destination destination)
+    Multiplexor getMultiplexor() {
+        return multiplexor;
+    }
+    
+    void setHandleAndDestination(int handle, Destination destination, Multiplexor multiplexor)
     {
         this.handle = handle;
         this.destination = destination;
+        this.multiplexor = multiplexor;
     }
 
     public String getPath() {

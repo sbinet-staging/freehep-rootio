@@ -10,7 +10,7 @@ import java.util.logging.Logger;
  */
 class Response {
 
-    private Destination dest;
+    private Multiplexor multiplexor;
     private DataInputStream in;
     private Short handle;
     private int status;
@@ -19,9 +19,9 @@ class Response {
     private byte[] data;
     private static Logger logger = Logger.getLogger(Response.class.getName());
 
-    Response(Destination dest, DataInputStream in) {
+    Response(Multiplexor multiplexor, DataInputStream in) {
         this.in = in;
-        this.dest = dest;
+        this.multiplexor = multiplexor;
     }
 
     int getDataAsInt() throws IOException {
@@ -32,6 +32,10 @@ class Response {
     String getDataAsString() throws IOException {
         readData();
         return new String(data,"US-ASCII");
+    }
+
+    Multiplexor getMultiplexor() {
+        return multiplexor;
     }
     
     void readData() throws IOException {
@@ -44,7 +48,7 @@ class Response {
     }
 
     Destination getDestination() {
-        return dest;
+        return multiplexor.getDestination();
     }
 
     boolean isComplete() {

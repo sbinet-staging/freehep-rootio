@@ -148,8 +148,21 @@ class Dispatcher {
 
         public void run() {
             try {
+                // FIXME: How do we know this is the correct multiplexor, it might
+                // have been closed and reopened (either by us or by someone else)
                 Multiplexor multiplexor = manager.connect(destination);
-                multiplexor.sendMessage(operation.getMessage(), this);
+                Multiplexor expectedMultiplexor = operation.getMultiplexor();
+                if (expectedMultiplexor != null && multiplexor != expectedMultiplexor)
+                {
+                   Operation preReq = operation.getPrerequisite();
+                   ChainCallback cc = new ChainCallback(preReq.getCallback(), this);
+                   MessageExecutor executor = new MessageExecutor(destination, new Operation(preReq.getName() + "-chain", preReq.getMessage(), cc));
+                   resend(executor);                    
+                }
+                else
+                {
+                    multiplexor.sendMessage(operation.getMessage(), this);
+                }
             } catch (IOException x) {
                 handleSocketError();
             } catch (Exception x) {
@@ -170,16 +183,8 @@ class Dispatcher {
         public void handleRedirect(String host, int port) throws UnknownHostException {
             Destination redirected = destination.getRedirected(host, port);
             operation.getCallback().clear();
-
-            if (operation.getPrerequisite() == null) {
-                destination = redirected;
-                resend(this);
-            } else {
-                Operation preReq = operation.getPrerequisite();
-                ChainCallback cc = new ChainCallback(preReq.getCallback(), this);
-                MessageExecutor executor = new MessageExecutor(redirected, new Operation(preReq.getName() + "-chain", preReq.getMessage(), cc));
-                resend(executor);
-            }
+            destination = redirected;
+            resend(this);
         }
 
         public synchronized void handleResponse(Response response) throws IOException {
@@ -195,14 +200,7 @@ class Dispatcher {
             if (errors > 1 && destination.getPrevious() != null) {
                 destination = destination.getPrevious();
             }
-            if (operation.getPrerequisite() == null) {
-                resend(this);
-            } else {
-                Operation preReq = operation.getPrerequisite();
-                ChainCallback cc = new ChainCallback(preReq.getCallback(), this);
-                MessageExecutor executor = new MessageExecutor(destination, new Operation(preReq.getName() + "-chain", preReq.getMessage(), cc));
-                resend(executor);
-            }
+            resend(this);
         }
 
         synchronized V getResult() throws IOException {

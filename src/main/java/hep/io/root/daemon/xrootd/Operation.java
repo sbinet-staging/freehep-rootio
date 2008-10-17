@@ -44,7 +44,7 @@ class Operation <V> {
         return null;
     }
     
-    /** Some operations have prefered destinations, such as a read operation on 
+    /** Some operations have preferred destinations, such as a read operation on 
      * an open file, which would prefer to be executed where the file is already
      * open.
      * @return The preferred destination, or <code>null</code> if no preferred destination.
@@ -54,4 +54,8 @@ class Operation <V> {
         return null;
     }
     
+    Multiplexor getMultiplexor() {
+        return null;
+    }
+
 }

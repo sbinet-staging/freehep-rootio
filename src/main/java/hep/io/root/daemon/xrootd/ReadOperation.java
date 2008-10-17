@@ -26,6 +26,11 @@ class ReadOperation extends Operation<Integer> {
         return file.getDestination();
     }
 
+    @Override
+    Multiplexor getMultiplexor() {
+        return file.getMultiplexor();
+    } 
+
     private static class ReadMessage extends Message {
 
         private OpenFile file;
