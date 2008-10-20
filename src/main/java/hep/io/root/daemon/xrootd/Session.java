@@ -44,7 +44,6 @@ class Session {
     {
         Destination actualDestination = operation.getDestination();
         if (actualDestination == null) actualDestination = destination;
-        logger.log(Level.FINE,"Sending "+operation+" to "+actualDestination);
         return dispatcher.send(actualDestination, operation);
     }
     

@@ -78,8 +78,9 @@ public class SimpleConsole {
                     try {
                         ConsoleReader console = new ConsoleReader();
                         File historyDir = new File(new File(System.getProperty("user.home")),".scalla");
-                        boolean ok = historyDir.mkdir();
-                        History history = ok ? new History(new File(historyDir,"command.history")) : new History();
+                        historyDir.mkdir();
+                        File historyFile = new File(historyDir,"command.history");
+                        History history = historyDir.canWrite() ? new History(historyFile) : new History();
                         console.setHistory(history);
                         console.addCompletor(new CommandCompletor());
 
@@ -140,7 +141,7 @@ public class SimpleConsole {
             if (command == null) {
                 console.printf("Unknown command: %s\n", commandName);
             } else {
-                command.doCommand(tokens.subList(1, tokens.size()), session, console);
+                command.doCommand(commandName, tokens.subList(1, tokens.size()), session, console);
             }
 
         }
@@ -173,7 +174,7 @@ public class SimpleConsole {
 
     static abstract class Command {
 
-        @Option(name = "-l", usage = "Set logging level for this command")
+        @Option(metaVar="level", name = "-l", usage = "Set logging level for this command")
         private String level;
         private SimpleConsole simpleConsole;
 
@@ -198,7 +199,7 @@ public class SimpleConsole {
 
         abstract void doCommand(PrintWriter console) throws IOException;
 
-        void doCommand(List<String> args, SimpleConsole session, PrintWriter console) throws IOException {
+        void doCommand(String command, List<String> args, SimpleConsole session, PrintWriter console) throws IOException {
             level = null;
             CmdLineParser parser = new CmdLineParser(this);
             try {
@@ -221,13 +222,13 @@ public class SimpleConsole {
                 // you'll get this exception. this will report
                 // an error message.
                 System.err.println(e.getMessage());
-                System.err.printf("java %s [options...] arguments...\n", SimpleConsole.class.getName());
+                System.err.printf("%s [options...] arguments...\n", command);
                 // print the list of available options
                 parser.printUsage(System.err);
                 System.err.println();
 
                 // print option sample. This is useful some time
-                System.err.printf("  Example: java %s %s\n", SimpleConsole.class.getName(), parser.printExample(ExampleMode.ALL));
+                System.err.printf("  Example: %s %s\n", command, parser.printExample(ExampleMode.ALL));
 
             }
         }

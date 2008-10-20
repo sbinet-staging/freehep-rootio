@@ -1,9 +1,9 @@
 package hep.io.root.daemon.xrootd;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.BitSet;
 import java.util.Date;
 import java.util.HashMap;
@@ -22,13 +22,12 @@ import java.util.logging.Logger;
  */
 class Multiplexor implements MultiplexorMBean {
 
-   private static final int MAX_IDLE = Integer.getInteger("hep.io.root.daemon.xrootd.ConnectionTimeout",60000);
+    private static final int MAX_IDLE = Integer.getInteger("hep.io.root.daemon.xrootd.ConnectionTimeout",60000);
     private static Logger logger = Logger.getLogger(Multiplexor.class.getName());
     private static AtomicInteger pseudoPid = new AtomicInteger(1);
     private Destination descriptor;
-    private DataOutputStream out;
     private DataInputStream in;
-    private Socket socket;
+    private SocketChannel channel;
     private Response response;
     private Thread thread;
     private BitSet handles = new BitSet();
@@ -43,7 +42,7 @@ class Multiplexor implements MultiplexorMBean {
         logger.fine(desc + " Opening connection");
         this.descriptor = desc;
         int port = desc.getPort();
-        socket = new Socket(desc.getAddress(), port);
+        channel = SocketChannel.open(desc.getSocketAddress());
         try {
             connect(desc);
             // Start a thread which will listen for future responses
@@ -53,7 +52,7 @@ class Multiplexor implements MultiplexorMBean {
             thread.start();
             logger.fine(desc + " Success");
         } catch (IOException x) {
-            socket.close();
+            channel.close();
             throw x;
         }
     }
@@ -128,7 +127,7 @@ class Multiplexor implements MultiplexorMBean {
         responseMap.clear();
         try
         {
-            if (!socket.isClosed()) socket.close();
+            if (channel.isConnected()) channel.close();
         }
         catch (IOException x)
         {
@@ -145,14 +144,12 @@ class Multiplexor implements MultiplexorMBean {
     }
 
     private void connect(Destination desc) throws IOException, IOException {
-        out = new DataOutputStream(socket.getOutputStream());
-        byte[] handshake = new byte[20];
-        handshake[15] = 4;
-        handshake[18] = ((2012>>>8) & 0xff);
-        handshake[19] = (byte) (2012 & 0xff);
-        out.write(handshake);
+        ByteBuffer buffer = ByteBuffer.allocate(20);
+        buffer.putInt(12,4);
+        buffer.putInt(16,2012);
+        channel.write(buffer);
 
-        in = new DataInputStream(socket.getInputStream());
+        in = new DataInputStream(channel.socket().getInputStream());
         int check = in.readInt();
         if (check == 8) {
             throw new IOException("rootd protocol not supported");
@@ -183,7 +180,7 @@ class Multiplexor implements MultiplexorMBean {
         message.writeByte(0);
         message.writeByte(XrootdProtocol.kXR_asyncap | XrootdProtocol.XRD_CLIENT_CURRENTVER);
         message.writeByte(XrootdProtocol.kXR_useruser);
-        message.send((short) 0, out);
+        message.send((short) 0, channel);
 
         response = new Response(this,in);
         response.read();
@@ -202,7 +199,7 @@ class Multiplexor implements MultiplexorMBean {
             // authentification. But no time so
             String fakeResponse = "unix\u0000" + System.getProperty("user.name") + " " + System.getProperty("user.group", "nogroup") + "\u0000";
             message = new Message(XrootdProtocol.kXR_auth, fakeResponse);
-            message.send((short) 0, out);
+            message.send((short) 0, channel);
             response.read();
             int status = response.getStatus();
             if (status == XrootdProtocol.kXR_error) {
@@ -238,7 +235,7 @@ class Multiplexor implements MultiplexorMBean {
     }
 
     private synchronized void sendMessage(short id, Message message) throws IOException {
-        bytesSent += message.send(id,out);
+        bytesSent += message.send(id,channel);
         lastActive.setTime(System.currentTimeMillis());
     }
 

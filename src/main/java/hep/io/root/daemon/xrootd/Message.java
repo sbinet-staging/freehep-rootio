@@ -1,7 +1,8 @@
 package hep.io.root.daemon.xrootd;
 
-import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.logging.Logger;
 
 /**
@@ -14,17 +15,16 @@ import java.util.logging.Logger;
  */
 class Message {
 
-    private int message;
-    private byte[] extra;
-    private int pos = 0;
-    private String string;
+    ByteBuffer buffer;
     private static Logger logger = Logger.getLogger(Response.class.getName());
 
     /** Create a message from an Xrootd operation code
      * @param message The op code
      */
     Message(int message) {
-        this(message, null);
+        buffer = ByteBuffer.allocate(24);
+        buffer.putShort((short) 0);
+        buffer.putShort((short)message);
     }
     /**
      * Create a message from an Xrootd operation code plus a string
@@ -32,61 +32,49 @@ class Message {
      * @param string The string to be sent with the message (such as a file path)
      */    
     Message(int message, String string) {
-        this.message = message;
-        this.string = string;
-        this.extra = new byte[16];
+        byte[] bytes = string.getBytes();
+        buffer = ByteBuffer.allocate(24+bytes.length);
+        buffer.putShort((short) 0);
+        buffer.putShort((short) message);
+        buffer.position(20);
+        buffer.putInt(bytes.length);
+        buffer.put(bytes);
+        buffer.position(4);
     }
 
-    int send(short handle, DataOutput out) throws IOException {
-        logger.finest("->" + message);
-        out.writeShort(handle);
-        out.writeShort(message);
-        sendExtra(out);
-        int messageLength = 24;
-        if (string == null) {
-            out.writeInt(0);
-        } else {
-            byte[] bytes = string.getBytes();
-            out.writeInt(bytes.length);
-            out.write(bytes);
-            messageLength += bytes.length;
-        }
-        return messageLength;
+    int send(short handle, SocketChannel out) throws IOException {
+        buffer.position(0);        
+        buffer.putShort(handle);
+        logger.finest("->" + buffer.getShort());
+        writeExtra(buffer);
+        buffer.position(0);
+        out.write(buffer);
+        return buffer.limit();
     }
 
     void writeByte(int i) {
-        extra[pos++] = (byte) (i & 0xff);
+        buffer.put((byte) (i & 0xff));
     }
 
     void writeInt(int i) {
-        writeByte(i >>> 24);
-        writeByte(i >>> 16);
-        writeByte(i >>> 8);
-        writeByte(i);
+        buffer.putInt(i);
     }
 
     void writeLong(long i) {
-        writeInt((int) (i >>> 32));
-        writeInt((int) i);
+        buffer.putLong(i);
     }
 
     void writeShort(int i) {
-        writeByte(i >>> 8);
-        writeByte(i);        
+        buffer.putShort((short) (i & 0xffff));
     }
 
     /**
      * This method can be overriden by classes that want to send the extra bytes
-     * in the header themselves. The method must write exactly 16 bytes to the 
-     * data output stream.
+     * in the header themselves.
      * @param out
      * @throws java.io.IOException
      */
-    void sendExtra(DataOutput out) throws IOException {
-        for (int i = 0; i < 16; i++) {
-            out.writeByte(extra == null || i >= extra.length ? 0 : extra[i]);
-        }
-    }
-        
+    void writeExtra(ByteBuffer out) throws IOException {
 
+    }
 }

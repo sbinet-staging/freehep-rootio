@@ -140,6 +140,7 @@ class Dispatcher {
         private boolean isDone = false;
         private int errors = 0;
         private Destination destination;
+        private long startTime = System.currentTimeMillis();
 
         MessageExecutor(Destination destination, Operation<V> operation) {
             this.destination = destination;
@@ -148,8 +149,6 @@ class Dispatcher {
 
         public void run() {
             try {
-                // FIXME: How do we know this is the correct multiplexor, it might
-                // have been closed and reopened (either by us or by someone else)
                 Multiplexor multiplexor = manager.connect(destination);
                 Multiplexor expectedMultiplexor = operation.getMultiplexor();
                 if (expectedMultiplexor != null && multiplexor != expectedMultiplexor)
@@ -162,10 +161,11 @@ class Dispatcher {
                 else
                 {
                     multiplexor.sendMessage(operation.getMessage(), this);
+                    logger.fine(String.format("Sent %s to %s after %,dms",operation,multiplexor,System.currentTimeMillis()-startTime));
                 }
             } catch (IOException x) {
                 handleSocketError();
-            } catch (Exception x) {
+            } catch (Throwable x) {
                 logger.log(Level.SEVERE, "Unexpected error while sending message", x);
             }
         }
@@ -174,6 +174,7 @@ class Dispatcher {
             this.exception = exception;
             isDone = true;
             notify();
+            logger.fine(String.format("Received error for %s after %,dms",operation,System.currentTimeMillis()-startTime));
         }
 
         public void reschedule(long time, TimeUnit units) {
@@ -192,6 +193,7 @@ class Dispatcher {
             if (response.isComplete()) {
                 isDone = true;
                 notify();
+                logger.fine(String.format("Received response %s from %s after %,dms",operation,response.getMultiplexor(),System.currentTimeMillis()-startTime));
             }
         }
 

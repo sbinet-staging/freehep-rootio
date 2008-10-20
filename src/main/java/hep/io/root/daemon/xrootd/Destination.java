@@ -1,6 +1,8 @@
 package hep.io.root.daemon.xrootd;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.UnknownHostException;
 
 /**
@@ -43,6 +45,10 @@ class Destination {
 
     InetAddress getAddress() {
         return address;
+    }
+
+    SocketAddress getSocketAddress() {
+        return new InetSocketAddress(address,port);
     }
 
     String getUserName() {

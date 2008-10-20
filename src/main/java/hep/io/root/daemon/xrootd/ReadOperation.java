@@ -1,7 +1,7 @@
 package hep.io.root.daemon.xrootd;
 
-import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Read from an open file.
@@ -45,12 +45,12 @@ class ReadOperation extends Operation<Integer> {
         }
 
         @Override
-        void sendExtra( DataOutput out) throws IOException {
+        void writeExtra(ByteBuffer out) throws IOException {
             // Note, we do things this way because the file handle may have changed
             // since we were created, as a result of a redirect.
-            out.writeInt(file.getHandle());
-            out.writeLong(fileOffset);
-            out.writeInt(size);
+            out.putInt(file.getHandle());
+            out.putLong(fileOffset);
+            out.putInt(size);
         }
     }
 
