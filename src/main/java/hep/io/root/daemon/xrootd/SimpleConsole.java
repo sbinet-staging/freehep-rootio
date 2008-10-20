@@ -1,19 +1,6 @@
 package hep.io.root.daemon.xrootd;
 
-import hep.io.root.daemon.xrootd.SimpleConsole.Command.ChecksumCommand;
-import hep.io.root.daemon.xrootd.SimpleConsole.Command.CloseCommand;
-import hep.io.root.daemon.xrootd.SimpleConsole.Command.ConnectCommand;
-import hep.io.root.daemon.xrootd.SimpleConsole.Command.DirListCommand;
-import hep.io.root.daemon.xrootd.SimpleConsole.Command.DisconnectCommand;
-import hep.io.root.daemon.xrootd.SimpleConsole.Command.ExitCommand;
-import hep.io.root.daemon.xrootd.SimpleConsole.Command.GetCommand;
-import hep.io.root.daemon.xrootd.SimpleConsole.Command.LevelCommand;
-import hep.io.root.daemon.xrootd.SimpleConsole.Command.LocateCommand;
-import hep.io.root.daemon.xrootd.SimpleConsole.Command.OpenCommand;
-import hep.io.root.daemon.xrootd.SimpleConsole.Command.PingCommand;
-import hep.io.root.daemon.xrootd.SimpleConsole.Command.StatCommand;
 import hep.io.root.daemon.xrootd.StatOperation.FileStatus;
-import java.io.Console;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -31,6 +18,9 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.ExampleMode;
 import org.kohsuke.args4j.Option;
+import jline.ConsoleReader;
+import jline.History;
+import jline.Completor;
 
 /**
  * A simple command line interface to xrootd
@@ -75,7 +65,6 @@ public class SimpleConsole {
             // parse the arguments.
             parser.parseArgument(args);
 
-            Console console = System.console();
             if (host != null) {
                 session = new Session(host, port, System.getProperty("user.name"));
             }
@@ -85,23 +74,26 @@ public class SimpleConsole {
             if (!arguments.isEmpty()) {
                 handleCommand(arguments, this, new PrintWriter(System.out, true));
             } else {
-                if (console == null) {
-                    System.out.println("No console available");
-                    System.exit(1);
-                }
                 for (;;) {
                     try {
-                        String line = console.readLine("scalla%s>", session == null ? "" : "(" + session + ")");
+                        ConsoleReader console = new ConsoleReader();
+                        File historyDir = new File(new File(System.getProperty("user.home")),".scalla");
+                        boolean ok = historyDir.mkdir();
+                        History history = ok ? new History(new File(historyDir,"command.history")) : new History();
+                        console.setHistory(history);
+                        console.addCompletor(new CommandCompletor());
+
+                        String line = console.readLine(String.format("scalla%s>", session == null ? "" : "(" + session + ")"));
                         if (line == null) {
-                            console.printf("\n");
-                            console.flush();
+                            console.printNewline();
+                            console.flushConsole();
                             break;
                         }
                         if (line.trim().length() == 0) {
                             continue;
                         }
                         String[] tokens = line.trim().split("\\s+");
-                        handleCommand(Arrays.asList(tokens), this, console.writer());
+                        handleCommand(Arrays.asList(tokens), this, new PrintWriter(System.out,true));
 
                     } catch (Exception x) {
                         x.printStackTrace();
@@ -162,6 +154,21 @@ public class SimpleConsole {
 
     private String getLoggingLevel() {
         return Logger.getLogger("").getLevel().getName();
+    }
+    
+    static class CommandCompletor implements Completor {
+
+        public int complete(String buffer, int position, List candidates)
+        {
+            if (buffer.contains(" ")) return 0;
+            else
+            {
+                for (String command : commandMap.keySet()) {
+                    if (command.startsWith(buffer)) candidates.add(command+" ");
+                }
+                return 0;
+            }
+        }
     }
 
     static abstract class Command {
@@ -224,153 +231,154 @@ public class SimpleConsole {
 
             }
         }
-
-        static class OpenCommand extends Command {
-
-            @Argument(metaVar="path", index = 0, required = true, usage = "Path to open")
-            private String path;
-
-            void doCommand(PrintWriter console) throws IOException {
-                int handle = getSession().open(path, 0, XrootdProtocol.kXR_open_read);
-                console.printf("file handle=%d\n", handle);
-            }
-        }
-
-        static class CloseCommand extends Command {
-
-            @Argument(metaVar="handle", index = 0, required = true, usage = "Handle to close")
-            private int handle;
-
-            void doCommand(PrintWriter console) throws IOException {
-                getSession().close(handle);
-            }
-        }
-
-        static class PingCommand extends Command {
-
-            void doCommand(PrintWriter console) throws IOException {
-                getSession().ping();
-            }
-        }
-
-        static class ExitCommand extends Command {
-
-            void doCommand(PrintWriter console) throws IOException {
-                System.exit(0);
-            }
-        }
-
-        static class StatCommand extends Command {
-
-            @Argument(metaVar="path", index = 0, required = true, usage = "Path to file")
-            private String path;
-
-            void doCommand(PrintWriter console) throws IOException {
-                FileStatus status = getSession().stat(path);
-                console.printf("%s\n", status);
-            }
-        }
-
-        static class DirListCommand extends Command {
-
-            @Argument(metaVar="path", index = 0, required = true, usage = "Path to directory")
-            private String path;
-
-            @Override
-            void doCommand( PrintWriter console) throws IOException {
-                List<String> list = getSession().dirList(path);
-                for (String file : list) {
-                    console.printf("%s\n", file);
-                }
-            }
-        }
-
-        static class LevelCommand extends Command {
-
-            @Argument(metaVar="level", index = 0, required = true, usage = "Logging level")
-            private String level;
-
-            @Override
-            void doCommand( PrintWriter console) throws IOException {
-                setLoggingLevel(level);
-            }
-        }
-
-        static class LocateCommand extends Command {
-
-            @Argument(metaVar="path", index = 0, required = true, usage = "Path to locate")
-            private String path;
-
-            @Override
-            void doCommand( PrintWriter console) throws IOException {
-                String[] result = getSession().locate(path, false, false);
-                for (String file : result) {
-                    console.printf("%s\n", file);
-                }
-            }
-        }
-
-        static class ChecksumCommand extends Command {
-
-            @Argument(metaVar="path", index = 0, required = true, usage = "Path to file")
-            private String path;
-
-            @Override
-            void doCommand( PrintWriter console) throws IOException {
-                String checksum = getSession().query(XrootdProtocol.kXR_Qcksum, path);
-                console.printf("%s\n", checksum);
-            }
-        }
-
-        static class ConnectCommand extends Command {
-
-            @Argument(metaVar="host", index = 0, required = true, usage = "Host to connect to")
-            private String host;
-            @Option(name = "-p", usage = "Port to connect to")
-            private int port = 1094;
-
-            @Override
-            void doCommand( PrintWriter console) throws IOException {
-                Session session = new Session(host, port, System.getProperty("user.name"));
-                setSession(session);
-            }
-        }
-
-        static class DisconnectCommand extends Command {
-
-            @Override
-            void doCommand( PrintWriter console) throws IOException {
-                setSession(null);
-            }
-        }
-
-        static class GetCommand extends Command {
-
-            @Argument(metaVar="path", index = 0, required = true, usage = "Path to file")
-            private String path;
-
-            @Override
-            void doCommand( PrintWriter console) throws IOException {
-                File file = new File(path);
-                String local = file.getName();
-                int handle = getSession().open(path, 0, XrootdProtocol.kXR_open_read);
-                OutputStream out = new FileOutputStream(local);
-                try {
-                    byte[] buffer = new byte[65536];
-                    int lTotal = 0;
-                    for (;;) {
-                        int l = getSession().read(handle, buffer, lTotal);
-                        if (l <= 0) {
-                            break;
-                        }
-                        out.write(buffer, 0, l);
-                        lTotal += l;
-                    }
-                } finally {
-                    getSession().close(handle);
-                    out.close();
-                }
-            }
-        }
     }
+
+     static class OpenCommand extends Command {
+
+         @Argument(metaVar="path", index = 0, required = true, usage = "Path to open")
+         private String path;
+
+         void doCommand(PrintWriter console) throws IOException {
+             int handle = getSession().open(path, 0, XrootdProtocol.kXR_open_read);
+             console.printf("file handle=%d\n", handle);
+         }
+     }
+
+     static class CloseCommand extends Command {
+
+         @Argument(metaVar="handle", index = 0, required = true, usage = "Handle to close")
+         private int handle;
+
+         void doCommand(PrintWriter console) throws IOException {
+             getSession().close(handle);
+         }
+     }
+
+     static class PingCommand extends Command {
+
+         void doCommand(PrintWriter console) throws IOException {
+             getSession().ping();
+         }
+     }
+
+     static class ExitCommand extends Command {
+
+         void doCommand(PrintWriter console) throws IOException {
+             System.exit(0);
+         }
+     }
+
+     static class StatCommand extends Command {
+
+         @Argument(metaVar="path", index = 0, required = true, usage = "Path to file")
+         private String path;
+
+         void doCommand(PrintWriter console) throws IOException {
+             FileStatus status = getSession().stat(path);
+             console.printf("%s\n", status);
+         }
+     }
+
+     static class DirListCommand extends Command {
+
+         @Argument(metaVar="path", index = 0, required = true, usage = "Path to directory")
+         private String path;
+
+         @Override
+         void doCommand( PrintWriter console) throws IOException {
+             List<String> list = getSession().dirList(path);
+             for (String file : list) {
+                 console.printf("%s\n", file);
+             }
+         }
+     }
+
+     static class LevelCommand extends Command {
+
+         @Argument(metaVar="level", index = 0, required = true, usage = "Logging level")
+         private String level;
+
+         @Override
+         void doCommand( PrintWriter console) throws IOException {
+             setLoggingLevel(level);
+         }
+     }
+
+     static class LocateCommand extends Command {
+
+         @Argument(metaVar="path", index = 0, required = true, usage = "Path to locate")
+         private String path;
+
+         @Override
+         void doCommand( PrintWriter console) throws IOException {
+             String[] result = getSession().locate(path, false, false);
+             for (String file : result) {
+                 console.printf("%s\n", file);
+             }
+         }
+     }
+
+     static class ChecksumCommand extends Command {
+
+         @Argument(metaVar="path", index = 0, required = true, usage = "Path to file")
+         private String path;
+
+         @Override
+         void doCommand( PrintWriter console) throws IOException {
+             String checksum = getSession().query(XrootdProtocol.kXR_Qcksum, path);
+             console.printf("%s\n", checksum);
+         }
+     }
+
+     static class ConnectCommand extends Command {
+
+         @Argument(metaVar="host", index = 0, required = true, usage = "Host to connect to")
+         private String host;
+         @Option(name = "-p", usage = "Port to connect to")
+         private int port = 1094;
+
+         @Override
+         void doCommand( PrintWriter console) throws IOException {
+             Session session = new Session(host, port, System.getProperty("user.name"));
+             setSession(session);
+         }
+     }
+
+     static class DisconnectCommand extends Command {
+
+         @Override
+         void doCommand( PrintWriter console) throws IOException {
+             setSession(null);
+         }
+     }
+
+     static class GetCommand extends Command {
+
+         @Argument(metaVar="path", index = 0, required = true, usage = "Path to file")
+         private String path;
+
+         @Override
+         void doCommand( PrintWriter console) throws IOException {
+             File file = new File(path);
+             String local = file.getName();
+             int handle = getSession().open(path, 0, XrootdProtocol.kXR_open_read);
+             OutputStream out = new FileOutputStream(local);
+             try {
+                 byte[] buffer = new byte[65536];
+                 int lTotal = 0;
+                 for (;;) {
+                     int l = getSession().read(handle, buffer, lTotal);
+                     if (l <= 0) {
+                         break;
+                     }
+                     out.write(buffer, 0, l);
+                     lTotal += l;
+                 }
+             } finally {
+                 getSession().close(handle);
+                 out.close();
+             }
+         }
+     }
+        
 }
