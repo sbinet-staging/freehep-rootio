@@ -7,7 +7,6 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -73,6 +72,10 @@ class Session {
     
     String[] locate(String path, boolean noWait, boolean refresh) throws IOException {
         return send(new LocateOperation(path,noWait,refresh)).getResponse();
+    }
+    
+    String protocol() throws IOException {
+        return send(new ProtocolOperation()).getResponse();
     }
 
     int open(final String path, final int mode, final int options) throws IOException {

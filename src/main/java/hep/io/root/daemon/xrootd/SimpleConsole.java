@@ -28,11 +28,11 @@ import jline.Completor;
  */
 public class SimpleConsole {
 
-    @Option(name = "-h", usage = "Host to connect to")
+    @Option(metaVar="host", name = "-h", usage = "Host to connect to")
     private String host;
-    @Option(name = "-p", usage = "Port to connect to")
+    @Option(metaVar="port", name = "-p", usage = "Port to connect to")
     private int port = 1094;
-    @Option(name = "-l", usage = "Logging level")
+    @Option(metaVar="level", name = "-l", usage = "Logging level")
     private String level;
     @Argument
     private List<String> arguments = new ArrayList<String>();
@@ -53,6 +53,7 @@ public class SimpleConsole {
         commandMap.put("get", new GetCommand());
         commandMap.put("connect", new ConnectCommand());
         commandMap.put("disconnect", new DisconnectCommand());
+        commandMap.put("protocol", new ProtocolCommand());
     }
 
     public static void main(String[] args) throws IOException {
@@ -351,6 +352,16 @@ public class SimpleConsole {
          void doCommand( PrintWriter console) throws IOException {
              setSession(null);
          }
+     }
+     
+     static class ProtocolCommand extends Command {
+
+        @Override
+        void doCommand(PrintWriter console) throws IOException
+        {
+            String protocol = getSession().protocol();
+            console.println(protocol);
+        }         
      }
 
      static class GetCommand extends Command {
