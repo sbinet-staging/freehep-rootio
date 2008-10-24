@@ -1,5 +1,7 @@
 package hep.io.root.daemon.xrootd;
 
+import hep.io.root.daemon.xrootd.StatOperation.FileStatus;
+
 /**
  * A class representing an open xrootd file. It encapsulates a handle used 
  * internally, and the destination with which the file is associated.
@@ -15,6 +17,9 @@ class OpenFile {
     private String path;
     private int mode;
     private int options;
+    private int compressionSize;
+    private int compressionType;
+    private FileStatus status;
 
     OpenFile(String path, int mode, int options) {
         this.path = path;
@@ -52,4 +57,30 @@ class OpenFile {
     public int getOptions() {
         return options;
     }
+
+    public int getCompressionSize() {
+        return compressionSize;
+    }
+
+    void setCompressionSize(int compressionSize) {
+        this.compressionSize = compressionSize;
+    }
+
+    public int getCompressionType() {
+        return compressionType;
+    }
+
+    void setCompressionType(int compressionType) {
+        this.compressionType = compressionType;
+    }
+
+    public FileStatus getStatus() {
+        return status;
+    }
+
+    void setStatus(FileStatus status) {
+        this.status = status;
+    }
+    
+    
 }

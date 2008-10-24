@@ -17,6 +17,7 @@ class Message {
 
     ByteBuffer buffer;
     private static Logger logger = Logger.getLogger(Response.class.getName());
+    private ByteBuffer data;
 
     /** Create a message from an Xrootd operation code
      * @param message The op code
@@ -47,8 +48,10 @@ class Message {
         buffer.putShort(handle);
         logger.finest("->" + buffer.getShort());
         writeExtra(buffer);
+        if (data != null) buffer.putInt(20,data.remaining());
         buffer.position(0);
         out.write(buffer);
+        if (data!= null) out.write(data);
         return buffer.limit();
     }
 
@@ -76,5 +79,15 @@ class Message {
      */
     void writeExtra(ByteBuffer out) throws IOException {
 
+    }
+
+    /**
+     * Used by classes that want to write their own data to the message
+     * @param buffer
+     * @param offset
+     * @param length
+     */
+    void setData(byte[] buffer, int offset, int length) {
+        this.data = ByteBuffer.wrap(buffer,offset,length);
     }
 }

@@ -1,5 +1,7 @@
 package hep.io.root.daemon.xrootd;
 
+import hep.io.root.daemon.xrootd.StatOperation.FileStatus;
+import java.io.DataInputStream;
 import java.io.IOException;
 
 /**
@@ -37,8 +39,20 @@ class OpenOperation extends Operation<OpenFile> {
         }
 
         public OpenFile responseReady(Response response) throws IOException {
-            int handle = response.getDataAsInt();
+            DataInputStream in = response.getInputStream();
+            int handle = in.readInt();
             file.setHandleAndDestination(handle, response.getDestination(), response.getMultiplexor());
+
+            if (response.getLength()>4) file.setCompressionSize(in.readInt());
+            if (response.getLength()>8) file.setCompressionType(in.readInt());
+            
+            if (response.getLength()>12) {
+               int dataLength = response.getLength()-12;
+               byte[] data = new byte[dataLength];
+               in.readFully(data);
+               String info = new String(data,"US-ASCII");
+               file.setStatus(new FileStatus(info,response.getDestination()));
+            }
             return file;
         }
     }

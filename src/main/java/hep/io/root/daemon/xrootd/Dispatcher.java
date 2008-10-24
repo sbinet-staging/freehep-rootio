@@ -42,7 +42,8 @@ class Dispatcher {
 
     <V> FutureResponse<V> send(Destination destination, Operation<V> operation) {
         MessageExecutor executor = new MessageExecutor(destination, operation);
-        scheduler.execute(executor);
+        //scheduler.execute(executor);
+        executor.run();
         return new FutureMessageResponse<V>(executor);
     }
 

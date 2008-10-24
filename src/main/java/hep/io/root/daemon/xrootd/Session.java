@@ -54,7 +54,7 @@ class Session {
         send(new PingOperation()).getResponse();
     }
 
-    void rm(final String path) throws IOException {
+    void remove(final String path) throws IOException {
         send(new RemoveOperation(path)).getResponse();
     }
 
@@ -95,7 +95,11 @@ class Session {
     int read(int fileHandle, final byte[] buffer, long fileOffset, final int bufOffset, final int size) throws IOException {
         return send(new ReadOperation(fileForFileHandle(fileHandle),buffer,fileOffset,bufOffset,size)).getResponse();
     }
-
+    
+    void write(int handle, byte[] buffer, int offset, int length, long fileOffset) throws IOException {
+        send(new WriteOperation(fileForFileHandle(handle),buffer,offset,length,fileOffset));
+    }
+ 
     @Override
     protected void finalize() throws Throwable {
         close();

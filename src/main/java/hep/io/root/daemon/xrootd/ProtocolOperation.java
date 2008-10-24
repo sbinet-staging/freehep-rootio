@@ -17,7 +17,7 @@ class ProtocolOperation extends Operation<String> {
         @Override
         String responseReady(Response response) throws IOException
         {
-            DataInputStream data = new DataInputStream(response.getInputStream());
+            DataInputStream data = response.getInputStream();
             int pval = data.readInt();
             int flags = data.readInt();
             return pval+" "+flags;
