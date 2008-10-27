@@ -1,6 +1,5 @@
 package hep.io.root.daemon.xrootd;
 
-import hep.io.root.daemon.xrootd.StatOperation.FileStatus;
 
 /**
  * A class representing an open xrootd file. It encapsulates a handle used 

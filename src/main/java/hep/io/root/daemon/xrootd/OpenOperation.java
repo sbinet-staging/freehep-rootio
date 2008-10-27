@@ -1,6 +1,5 @@
 package hep.io.root.daemon.xrootd;
 
-import hep.io.root.daemon.xrootd.StatOperation.FileStatus;
 import java.io.DataInputStream;
 import java.io.IOException;
 

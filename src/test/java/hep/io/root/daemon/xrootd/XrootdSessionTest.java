@@ -1,6 +1,5 @@
 package hep.io.root.daemon.xrootd;
 
-import hep.io.root.daemon.xrootd.StatOperation.FileStatus;
 import java.io.IOException;
 import java.util.List;
 import junit.framework.TestCase;

@@ -6,10 +6,10 @@ import java.net.SocketAddress;
 import java.net.UnknownHostException;
 
 /**
- *
+ * Represents a target connection for an xrootd operation.
  * @author tonyj
  */
-class Destination {
+public class Destination {
 
     private String host;
     private int port;
@@ -17,7 +17,7 @@ class Destination {
     private Destination previous;
     private InetAddress address;
 
-    Destination(String host, int port, String userName) throws UnknownHostException {
+    public Destination(String host, int port, String userName) throws UnknownHostException {
         this.host = host;
         this.port = port <= 0 ? XrootdProtocol.defaultPort : port;
         this.userName = userName;

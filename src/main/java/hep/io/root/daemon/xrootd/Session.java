@@ -1,6 +1,5 @@
 package hep.io.root.daemon.xrootd;
 
-import hep.io.root.daemon.xrootd.StatOperation.FileStatus;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -15,7 +14,7 @@ import java.util.logging.Logger;
  * available before they return.
  * @author tonyj
  */
-class Session {
+public class Session {
 
     private static Logger logger = Logger.getLogger(Session.class.getName());
     private Dispatcher dispatcher = Dispatcher.instance();
@@ -27,11 +26,11 @@ class Session {
         this(new Destination(host, port, userName));
     }
     
-    public Session(Destination dest) throws IOException {
+    Session(Destination dest) throws IOException {
         this.destination = dest;
     }
 
-    void close() throws IOException {
+    public void close() throws IOException {
         // Note, we make a copy to avoid concurrent modification exception 
         // as we close files
         for (int i : new ArrayList<Integer>(openFiles.keySet())) {
@@ -39,64 +38,69 @@ class Session {
         }
     }
     
-    <V> FutureResponse<V> send(Operation<V> operation)
+    /** 
+     * This method allows asynchronous execution of an operation.
+     * @param operation The operation to be performed
+     * @return A future which will contain the response
+     */
+    public <V> FutureResponse<V> send(Operation<V> operation)
     {
         Destination actualDestination = operation.getDestination();
         if (actualDestination == null) actualDestination = destination;
         return dispatcher.send(actualDestination, operation);
     }
     
-    List<String> dirList(String path) throws IOException {
+    public List<String> dirList(String path) throws IOException {
         return send(new DirListOperation(path)).getResponse();
     }
 
-    void ping() throws IOException {
+    public void ping() throws IOException {
         send(new PingOperation()).getResponse();
     }
 
-    void remove(final String path) throws IOException {
+    public void remove(final String path) throws IOException {
         send(new RemoveOperation(path)).getResponse();
     }
 
-    FileStatus stat(final String path) throws IOException {
+    public FileStatus stat(final String path) throws IOException {
         return send(new StatOperation(path)).getResponse();
     }
 
-    String query(final int queryType, final String path) throws IOException {
+    public String query(final int queryType, final String path) throws IOException {
         return send(new QueryOperation(queryType,path)).getResponse();
     }
 
-    String prepare(String[] path, int options, int priority) throws IOException {
+    public String prepare(String[] path, int options, int priority) throws IOException {
         return send(new PrepareOperation(path,options,priority)).getResponse();
     }
     
-    String[] locate(String path, boolean noWait, boolean refresh) throws IOException {
+    public String[] locate(String path, boolean noWait, boolean refresh) throws IOException {
         return send(new LocateOperation(path,noWait,refresh)).getResponse();
     }
     
-    String protocol() throws IOException {
+    public String protocol() throws IOException {
         return send(new ProtocolOperation()).getResponse();
     }
 
-    int open(final String path, final int mode, final int options) throws IOException {
+    public int open(final String path, final int mode, final int options) throws IOException {
         OpenFile file = send(new OpenOperation(path,mode,options)).getResponse();
         return fileHandleForFile(file);
     }
 
-    void close(int fileHandle) throws IOException {
+    public void close(int fileHandle) throws IOException {
         send(new CloseOperation(fileForFileHandle(fileHandle))).getResponse();
         freeFileHandle(fileHandle);
     }
 
-    int read(int fileHandle, byte[] buffer, long fileOffset) throws IOException {
+    public int read(int fileHandle, byte[] buffer, long fileOffset) throws IOException {
         return read(fileHandle, buffer, fileOffset, 0, buffer.length);
     }
 
-    int read(int fileHandle, final byte[] buffer, long fileOffset, final int bufOffset, final int size) throws IOException {
+    public int read(int fileHandle, final byte[] buffer, long fileOffset, final int bufOffset, final int size) throws IOException {
         return send(new ReadOperation(fileForFileHandle(fileHandle),buffer,fileOffset,bufOffset,size)).getResponse();
     }
     
-    void write(int handle, byte[] buffer, int offset, int length, long fileOffset) throws IOException {
+    public void write(int handle, byte[] buffer, int offset, int length, long fileOffset) throws IOException {
         send(new WriteOperation(fileForFileHandle(handle),buffer,offset,length,fileOffset));
     }
  

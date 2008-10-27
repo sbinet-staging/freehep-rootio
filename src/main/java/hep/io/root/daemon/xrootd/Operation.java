@@ -5,7 +5,7 @@ package hep.io.root.daemon.xrootd;
  * a callback to handle the response from the server.
  * @author tonyj
  */
-class Operation <V> {
+public class Operation <V> {
     private Message message;
     private Callback<V> callback;
     private String name;

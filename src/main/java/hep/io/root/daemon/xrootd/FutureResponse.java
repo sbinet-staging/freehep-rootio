@@ -7,12 +7,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- *
+ * A future returned when executing asynchronous operations.
  * @author tonyj
  */
-abstract class FutureResponse<V> implements Future<V> {
+public abstract class FutureResponse<V> implements Future<V> {
 
-    V getResponse() throws IOException {
+    public V getResponse() throws IOException {
         return getResponse(Integer.MAX_VALUE, TimeUnit.SECONDS);
     }
 
@@ -44,5 +44,5 @@ abstract class FutureResponse<V> implements Future<V> {
         }
     }
 
-    abstract V getResponse(long timeout, TimeUnit unit) throws IOException;
+    public abstract V getResponse(long timeout, TimeUnit unit) throws IOException;
 }

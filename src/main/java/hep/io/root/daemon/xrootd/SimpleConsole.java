@@ -1,6 +1,5 @@
 package hep.io.root.daemon.xrootd;
 
-import hep.io.root.daemon.xrootd.StatOperation.FileStatus;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -319,6 +318,12 @@ public class SimpleConsole {
         private boolean retstat;
         @Option(name = "-h", usage = "Hide the file until successfully closed")
         private boolean ulterior;
+
+        @Override
+        void reset() {
+            super.reset();
+            async = compress = delete = force = mkpath = newFile = nowait = open_apnd = open_read = open_updt = refresh = replica = retstat = ulterior = false;
+        }        
 
         void doCommand(PrintWriter console) throws IOException {
             int options = 0;

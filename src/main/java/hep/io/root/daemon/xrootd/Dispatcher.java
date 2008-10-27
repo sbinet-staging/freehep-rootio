@@ -92,7 +92,7 @@ class Dispatcher {
             this.listener = listener;
         }
 
-        V getResponse(long timeout, TimeUnit timeUnit) throws IOException {
+        public V getResponse(long timeout, TimeUnit timeUnit) throws IOException {
             long start = System.nanoTime();
             long timeoutNS = timeUnit.toNanos(timeout);
             long waitTimeoutNS = TimeUnit.NANOSECONDS.convert(WAIT_TIMEOUT, TimeUnit.MILLISECONDS);
