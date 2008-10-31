@@ -151,6 +151,7 @@ class Dispatcher {
         public void run() {
             try {
                 Multiplexor multiplexor = manager.connect(destination);
+                if (multiplexor == null) resend(this,30,TimeUnit.SECONDS);
                 Multiplexor expectedMultiplexor = operation.getMultiplexor();
                 if (expectedMultiplexor != null && multiplexor != expectedMultiplexor)
                 {
