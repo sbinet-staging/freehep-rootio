@@ -1,7 +1,9 @@
 package hep.io.root.daemon.xrootd;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 /**
  * Read from an open file.
@@ -11,8 +13,16 @@ class ReadOperation extends Operation<Integer> {
 
     private OpenFile file;
 
-    ReadOperation(OpenFile file, byte[] buffer, long fileOffset, int bufOffset, int size) {
-        super("read", new ReadMessage(file, fileOffset, size), new ReadCallback(buffer, bufOffset));
+    ReadOperation(OpenFile file, long fileOffset, byte[] buffer, int bufOffset, int size) {
+        super("read", new ReadMessage(file, fileOffset, size), new ReadCallback(ByteBuffer.wrap(buffer, bufOffset, size)));
+        this.file = file;
+    }
+    ReadOperation(OpenFile file, long fileOffset, ByteBuffer buffer) {
+        super("read", new ReadMessage(file, fileOffset, buffer.remaining()), new ReadCallback(buffer));
+        this.file = file;
+    }
+    ReadOperation(OpenFile file, FileChannel fileChannel, long fileOffset, int size) {
+        super("read", new ReadMessage(file, fileOffset, size), new FileReadCallback(fileChannel, fileOffset, size));
         this.file = file;
     }
 
@@ -56,25 +66,52 @@ class ReadOperation extends Operation<Integer> {
 
     private static class ReadCallback extends Callback<Integer> {
 
-        private byte[] buffer;
-        private int bufOffset;
-        private int l;
+        private ByteBuffer buffer;
+        private int initialPosition;
 
-        ReadCallback(byte[] buffer, int bufOffset) {
+        ReadCallback(ByteBuffer buffer) {
+            this.initialPosition = buffer.position();
             this.buffer = buffer;
-            this.bufOffset = bufOffset;
         }
 
         public Integer responseReady(Response response) throws IOException {
-            int dlen = response.getLength();
-            response.getInputStream().readFully(buffer, bufOffset + l, dlen);
-            l += dlen;
-            return l;
+            response.readData(buffer);
+            int result = buffer.position()-initialPosition;
+            return result == 0 ? -1 : result;
         }
 
         @Override
         public void clear() {
-            l = 0;
+            buffer.position(initialPosition);
+        }
+    }
+
+    private static class FileReadCallback extends Callback<Integer> {
+
+        private FileChannel fileChannel;
+        private long bufOffset;
+        private long readLength;
+        private int bufLength;
+
+        FileReadCallback(FileChannel fileChannel, long bufOffset, int bufLength) {
+            this.bufOffset = bufOffset;
+            this.readLength = 0;
+            this.bufLength = bufLength;
+            this.fileChannel = fileChannel;
+        }
+
+        public Integer responseReady(Response response) throws IOException {
+            // FIXME: If this fails how do we know if it is a socket problem or a file problem?
+            long l = fileChannel.transferFrom(response.getSocketChannel(), bufOffset+readLength, Math.min(response.getRemaining(),bufLength-readLength));
+            if (l<0) throw new EOFException();
+            readLength += l;
+            response.incrementDataRead((int) l);
+            return readLength == 0 ? -1 : (int) readLength;
+        }
+
+        @Override
+        public void clear() {
+            readLength = 0;
         }
     }
 }

@@ -25,22 +25,23 @@ public class XrootdSessionTest extends TestCase {
         FileStatus status = handle.stat(dir + files.get(0));
         assertEquals(353216, status.getSize());
 
-        int fh = handle.open(dir + files.get(0), 0, XrootdProtocol.kXR_open_read);
+        OpenFile file = handle.open(dir + files.get(0), 0, XrootdProtocol.kXR_open_read);
         byte[] result = new byte[300000];
-        int l = handle.read(fh, result, 1024);
+        int l = handle.read(file, 1024, result);
         assertEquals(300000, l);
-        handle.close(fh);
+        handle.close(file);
 
-//      InputStream in = handle.openStream(dir+files.get(0),0,XrootdProtocol.kXR_open_read);
-//      int p = 0;
-//      for (;;)
-//      {
-//         int ll = in.read(result);
-//         if (ll < 0) break;
-//         p += ll;
-//      }
-//      in.close();
-//      assertEquals(353216,p);
+        file = handle.open(dir + files.get(0), 0, XrootdProtocol.kXR_open_read);
+        int p = 0;
+        for (;;) {
+            int ll = handle.read(file, p, result);
+            if (ll < 0) {
+                break;
+            }
+            p += ll;
+        }
+        handle.close(file);
+        assertEquals(353216, p);
 
     }
 }

@@ -8,7 +8,7 @@ package hep.io.root.daemon.xrootd;
  * redirect.
  * @author tonyj
  */
-class OpenFile {
+public class OpenFile {
 
     private int handle;
     private Destination destination;
@@ -80,6 +80,7 @@ class OpenFile {
     void setStatus(FileStatus status) {
         this.status = status;
     }
-    
+
+    //FIXME: Close this automatically in a finalizer?
     
 }

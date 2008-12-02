@@ -1,5 +1,6 @@
 package hep.io.root.daemon.xrootd;
 
+import hep.io.root.daemon.xrootd.MultiplexorManager.MultiplexorReadyCallback;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.UnknownHostException;
@@ -20,11 +21,11 @@ class Dispatcher {
     private static final int WAIT_LIMIT = Integer.getInteger("hep.io.root.deamon.xrootd.waitLimit", 1000).intValue();
     private static Dispatcher theDispatcher = new Dispatcher();
     private ScheduledThreadPoolExecutor scheduler;
-    private MultiplexorManager manager = new MultiplexorManager();
+    private MultiplexorManager manager;
 
     private Dispatcher() {
         scheduler = new ScheduledThreadPoolExecutor(1,new DaemonThreadFactory());
-        scheduler.scheduleAtFixedRate(manager, 5, 5, TimeUnit.SECONDS);
+        manager = new MultiplexorManager(scheduler);
     }
 
     private static class DaemonThreadFactory implements ThreadFactory
@@ -86,7 +87,7 @@ class Dispatcher {
 
     private static class FutureMessageResponse<V> extends FutureResponse<V> {
 
-        private MessageExecutor<V> listener;
+        private final MessageExecutor<V> listener;
 
         FutureMessageResponse(MessageExecutor<V> listener) {
             this.listener = listener;
@@ -97,8 +98,9 @@ class Dispatcher {
             long timeoutNS = timeUnit.toNanos(timeout);
             long waitTimeoutNS = TimeUnit.NANOSECONDS.convert(WAIT_TIMEOUT, TimeUnit.MILLISECONDS);
             try {
-                for (int i = 0;;) {
+                for (;;) {
                     synchronized (listener) {
+                        if (listener.isDone()) return listener.getResult();
                         TimeUnit.NANOSECONDS.timedWait(listener, Math.min(timeoutNS,waitTimeoutNS));
                         if (listener.isDone()) return listener.getResult();
                     }
@@ -133,7 +135,7 @@ class Dispatcher {
      * original MessageExecutor.
      * @param <V>
      */
-    private class MessageExecutor<V> implements ResponseListener, Runnable {
+    private class MessageExecutor<V> implements ResponseListener, Runnable, MultiplexorReadyCallback {
 
         private Operation<V> operation;
         private V result;
@@ -150,7 +152,12 @@ class Dispatcher {
 
         public void run() {
             try {
-                Multiplexor multiplexor = manager.connect(destination);
+                
+                Multiplexor multiplexor = manager.getMultiplexor(destination,this);
+                if (multiplexor == null)
+                {
+                   return;
+                }
                 if (multiplexor == null) resend(this,30,TimeUnit.SECONDS);
                 Multiplexor expectedMultiplexor = operation.getMultiplexor();
                 if (expectedMultiplexor != null && multiplexor != expectedMultiplexor)
@@ -166,12 +173,16 @@ class Dispatcher {
                     logger.fine(String.format("Sent %s to %s after %,dms",operation,multiplexor,System.currentTimeMillis()-startTime));
                 }
             } catch (IOException x) {
-                handleSocketError();
+                handleSocketError(x);
             } catch (Throwable x) {
                 logger.log(Level.SEVERE, "Unexpected error while sending message", x);
             }
         }
 
+        public void multiplexorReady(Multiplexor multiplexor) {
+            resend(this);
+        }
+        
         public synchronized void handleError(IOException exception) {
             this.exception = exception;
             isDone = true;
@@ -199,12 +210,13 @@ class Dispatcher {
             }
         }
 
-        public void handleSocketError() {
+        public void handleSocketError(IOException iOException) {
             errors++;
             if (errors > 1 && destination.getPrevious() != null) {
                 destination = destination.getPrevious();
             }
-            resend(this);
+            operation.getCallback().clear();
+            resend(this,1,TimeUnit.SECONDS);
         }
 
         synchronized V getResult() throws IOException {

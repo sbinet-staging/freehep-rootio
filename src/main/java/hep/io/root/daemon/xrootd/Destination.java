@@ -4,9 +4,11 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.Collections;
 
 /**
- * Represents a target connection for an xrootd operation.
+ * Represents a target host for an xrootd operation.
  * @author tonyj
  */
 public class Destination {
@@ -15,18 +17,45 @@ public class Destination {
     private int port;
     private String userName;
     private Destination previous;
+    private InetAddress[] addresses;
     private InetAddress address;
+
+    private Destination() {
+    }
 
     public Destination(String host, int port, String userName) throws UnknownHostException {
         this.host = host;
         this.port = port <= 0 ? XrootdProtocol.defaultPort : port;
         this.userName = userName;
-        // Fixme: We need to implement shuffle properly
-        this.address = InetAddress.getByName(host);
+        this.addresses = InetAddress.getAllByName(host);
+        if (addresses.length == 0) {
+            throw new UnknownHostException("No valid IP addresses");
+        }
+        Collections.shuffle(Arrays.asList(addresses));
+        address = addresses[0];
     }
 
     String getAddressAndPort() {
-        return address+":"+port;
+        return address + ":" + port;
+    }
+
+    Destination getAlternateDestination(int index) {
+        if (index == 0 || addresses.length < 2) {
+            return this;
+        } else {
+            return copy(index);
+        }
+    }
+
+    private Destination copy(int index) {
+        Destination dest = new Destination();
+        dest.host = host;
+        dest.port = port;
+        dest.userName = userName;
+        dest.previous = previous;
+        dest.addresses = addresses;
+        dest.address = addresses[index % addresses.length];
+        return dest;
     }
 
     int getPort() {
@@ -48,7 +77,7 @@ public class Destination {
     }
 
     SocketAddress getSocketAddress() {
-        return new InetSocketAddress(address,port);
+        return new InetSocketAddress(address, port);
     }
 
     String getUserName() {

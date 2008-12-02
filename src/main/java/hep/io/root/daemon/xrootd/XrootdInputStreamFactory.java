@@ -8,8 +8,8 @@ import java.io.InputStream;
  * @author tonyj
  */
 public class XrootdInputStreamFactory {
-    protected InputStream createStream(XrootdURLConnection connection) throws IOException
-    {
+
+    protected InputStream createStream(XrootdURLConnection connection) throws IOException {
         return new XrootdInputStream(connection);
     }
 }

@@ -17,5 +17,5 @@ interface ResponseListener {
 
     void handleResponse(Response response) throws IOException;
 
-    void handleSocketError();
+    void handleSocketError(IOException x);
 }

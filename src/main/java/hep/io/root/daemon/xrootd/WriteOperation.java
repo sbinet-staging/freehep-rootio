@@ -10,7 +10,7 @@ class WriteOperation extends Operation<Void> {
 
     private OpenFile file;
 
-    WriteOperation(OpenFile file, byte[] buffer, int offset, int length, long fileOffset) {
+    WriteOperation(OpenFile file, long fileOffset, byte[] buffer, int offset, int length) {
         super("write", new WriteMessage(file, buffer, offset, length, fileOffset), new DefaultCallback());
         this.file = file;
     }

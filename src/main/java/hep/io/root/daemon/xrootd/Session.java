@@ -1,11 +1,7 @@
 package hep.io.root.daemon.xrootd;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -18,8 +14,6 @@ public class Session {
 
     private static Logger logger = Logger.getLogger(Session.class.getName());
     private Dispatcher dispatcher = Dispatcher.instance();
-    private BitSet openFileBitSet = new BitSet();
-    private Map<Integer, OpenFile> openFiles = new HashMap<Integer, OpenFile>();
     private Destination destination;
 
     public Session(String host, int port, String userName) throws IOException {
@@ -31,11 +25,7 @@ public class Session {
     }
 
     public void close() throws IOException {
-        // Note, we make a copy to avoid concurrent modification exception 
-        // as we close files
-        for (int i : new ArrayList<Integer>(openFiles.keySet())) {
-            close(i);
-        }
+        // ToDo: Should we close any open files?
     }
     
     /** 
@@ -82,50 +72,24 @@ public class Session {
         return send(new ProtocolOperation()).getResponse();
     }
 
-    public int open(final String path, final int mode, final int options) throws IOException {
-        OpenFile file = send(new OpenOperation(path,mode,options)).getResponse();
-        return fileHandleForFile(file);
+    public OpenFile open(final String path, final int mode, final int options) throws IOException {
+        return send(new OpenOperation(path,mode,options)).getResponse();
     }
 
-    public void close(int fileHandle) throws IOException {
-        send(new CloseOperation(fileForFileHandle(fileHandle))).getResponse();
-        freeFileHandle(fileHandle);
+    public void close(OpenFile file) throws IOException {
+        send(new CloseOperation(file)).getResponse();
     }
 
-    public int read(int fileHandle, byte[] buffer, long fileOffset) throws IOException {
-        return read(fileHandle, buffer, fileOffset, 0, buffer.length);
+    public int read(OpenFile file, long fileOffset, byte[] buffer) throws IOException {
+        return read(file, fileOffset, buffer, 0, buffer.length);
     }
 
-    public int read(int fileHandle, final byte[] buffer, long fileOffset, final int bufOffset, final int size) throws IOException {
-        return send(new ReadOperation(fileForFileHandle(fileHandle),buffer,fileOffset,bufOffset,size)).getResponse();
+    public int read(OpenFile file, long fileOffset, byte[] buffer, int bufOffset, int size) throws IOException {
+        return send(new ReadOperation(file,fileOffset, buffer,bufOffset,size)).getResponse();
     }
     
-    public void write(int handle, byte[] buffer, int offset, int length, long fileOffset) throws IOException {
-        send(new WriteOperation(fileForFileHandle(handle),buffer,offset,length,fileOffset));
-    }
- 
-    @Override
-    protected void finalize() throws Throwable {
-        close();
-        super.finalize();
-    }
-
-    private synchronized OpenFile fileForFileHandle(int fileHandle) {
-        OpenFile result = openFiles.get(fileHandle);
-        if (result == null) throw new IllegalArgumentException("Invalid file handle");
-        return result;
-    }
-
-    private synchronized int fileHandleForFile(OpenFile file) {
-        int handle = openFileBitSet.nextClearBit(0);
-        openFileBitSet.set(handle);
-        openFiles.put(handle, file);
-        return handle;
-    }
-
-    private synchronized void freeFileHandle(int fileHandle) {
-        openFileBitSet.clear(fileHandle);
-        openFiles.remove(fileHandle);
+    public void write(OpenFile file, long fileOffset, byte[] buffer, int offset, int length) throws IOException {
+        send(new WriteOperation(file,fileOffset,buffer,offset,length));
     }
 
     @Override

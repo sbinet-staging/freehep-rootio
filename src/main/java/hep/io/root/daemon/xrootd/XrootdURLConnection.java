@@ -24,7 +24,7 @@ public class XrootdURLConnection extends URLConnection {
     private long date;
     private long fSize;
     private int flags;
-    private static Logger logger = Logger.getLogger("hep.io.root.daemon.xrootd");
+    private static Logger logger = Logger.getLogger(XrootdURLConnection.class.getName());
     public static final String XROOT_AUTHORIZATION_SCHEME = "scheme";
     public static final String XROOT_AUTHORIZATION_SCHEME_ANONYMOUS = "anonymous";
     public static final String XROOT_AUTHORIZATION_USER = "user";
@@ -67,8 +67,9 @@ public class XrootdURLConnection extends URLConnection {
             username = System.getProperty("root.user");
         }
         if (password == null) {
-            password = System.getProperty("root.password");        // Check for username password, if not present, and if allowed, prompt the user.
+            password = System.getProperty("root.password"); 
         }
+        // Check for username password, if not present, and if allowed, prompt the user.
         if ((password == null || username == null) && getAllowUserInteraction()) {
             int port = url.getPort();
             if (port == -1) {
@@ -92,6 +93,9 @@ public class XrootdURLConnection extends URLConnection {
             fSize = status.getSize();
             flags = status.getFlags();
             date = status.getModTime().getTime();
+            // Prepare to do a checksum
+            // FIXME: The file location may contain the original redirector, which may result
+            // in the checksum being sent to the redurector
             if (!dest.equals(status.getFileLocation())) {
                 session.close();
                 session = new Session(status.getFileLocation());

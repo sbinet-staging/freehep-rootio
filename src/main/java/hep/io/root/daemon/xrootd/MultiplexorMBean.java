@@ -1,8 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
 package hep.io.root.daemon.xrootd;
 
 import java.util.Date;
@@ -29,4 +24,7 @@ public interface MultiplexorMBean {
 
     int getOutstandingResponseCount();
 
+    int getProtocolVersion();
+
+    int getServerFlag();
 }

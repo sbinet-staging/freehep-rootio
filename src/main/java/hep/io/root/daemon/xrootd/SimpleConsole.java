@@ -7,14 +7,17 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.kohsuke.args4j.Argument;
@@ -43,7 +46,8 @@ public class SimpleConsole {
     private List<String> arguments = new ArrayList<String>();
     private Session session;
     private static Map<String, Command> commandMap = new TreeMap<String, Command>();
-    
+    private static final ByteFormat format = new ByteFormat();
+
 
     static {
         commandMap.put("open", new OpenCommand());
@@ -56,6 +60,7 @@ public class SimpleConsole {
         commandMap.put("quit", new ExitCommand());
         commandMap.put("dirList", new DirListCommand());
         commandMap.put("checksum", new ChecksumCommand());
+        commandMap.put("stats", new StatsCommand());
         commandMap.put("get", new GetCommand());
         commandMap.put("put", new PutCommand());
         commandMap.put("connect", new ConnectCommand());
@@ -84,21 +89,11 @@ public class SimpleConsole {
             if (!arguments.isEmpty()) {
                 handleCommand(arguments, this, new PrintWriter(System.out, true));
             } else {
+                ReadAheadConsole console = new ReadAheadConsole();
                 for (;;) {
                     try {
-                        ConsoleReader console = new ConsoleReader();
-                        File historyDir = new File(new File(System.getProperty("user.home")), ".scalla");
-                        historyDir.mkdir();
-                        File historyFile = new File(historyDir, "command.history");
-                        History history = historyDir.canWrite() ? new History(historyFile) : new History();
-                        console.setHistory(history);
-                        console.addCompletor(new CommandCompletor());
-                        console.addTriggeredAction(ConsoleOperations.CTRL_E, new ControlCListener());
-
                         String line = console.readLine(String.format("scalla%s>", session == null ? "" : "(" + session + ")"));
                         if (line == null) {
-                            console.printNewline();
-                            console.flushConsole();
                             break;
                         }
                         if (line.trim().length() == 0) {
@@ -245,7 +240,7 @@ public class SimpleConsole {
         }
 
         private void printHelp(Writer writer) {
-            new CmdLineParser(this).printUsage(writer,null);
+            new CmdLineParser(this).printUsage(writer, null);
         }
 
         void reset() {
@@ -263,23 +258,18 @@ public class SimpleConsole {
             super.reset();
             commandName = null;
         }
-        
+
         @Override
         void doCommand(PrintWriter console) throws IOException {
-            if (commandName == null)
-            {
+            if (commandName == null) {
                 for (Map.Entry<String, Command> entry : commandMap.entrySet()) {
                     console.printf("%s %s\n", entry.getKey(), entry.getValue().printExample());
                 }
-            }
-            else
-            {
+            } else {
                 Command command = commandMap.get(commandName);
                 if (command == null) {
                     console.printf("Unknown command: %s\n", commandName);
-                }
-                else
-                {
+                } else {
                     command.printHelp(console);
                 }
             }
@@ -323,7 +313,7 @@ public class SimpleConsole {
         void reset() {
             super.reset();
             async = compress = delete = force = mkpath = newFile = nowait = open_apnd = open_read = open_updt = refresh = replica = retstat = ulterior = false;
-        }        
+        }
 
         void doCommand(PrintWriter console) throws IOException {
             int options = 0;
@@ -369,8 +359,8 @@ public class SimpleConsole {
             if (ulterior) {
                 options |= XrootdProtocol.kXR_ulterior;
             }
-            int handle = getSession().open(path, 0, options);
-            console.printf("file handle=%d\n", handle);
+//            int handle = getSession().open(path, 0, options);
+//            console.printf("file handle=%d\n", handle);
         }
     }
 
@@ -380,7 +370,7 @@ public class SimpleConsole {
         private int handle;
 
         void doCommand(PrintWriter console) throws IOException {
-            getSession().close(handle);
+//            getSession().close(handle);
         }
     }
 
@@ -408,11 +398,12 @@ public class SimpleConsole {
             console.printf("%s\n", status);
         }
     }
-    
+
     static class RemoveCommand extends Command {
+
         @Argument(metaVar = "path", index = 0, required = true, usage = "Path to file")
-        private String path;  
-        
+        private String path;
+
         void doCommand(PrintWriter console) throws IOException {
             getSession().remove(path);
         }
@@ -424,7 +415,7 @@ public class SimpleConsole {
         private String path;
 
         @Override
-        void doCommand( PrintWriter console) throws IOException {
+        void doCommand(PrintWriter console) throws IOException {
             List<String> list = getSession().dirList(path);
             for (String file : list) {
                 console.printf("%s\n", file);
@@ -438,7 +429,7 @@ public class SimpleConsole {
         private String level;
 
         @Override
-        void doCommand( PrintWriter console) throws IOException {
+        void doCommand(PrintWriter console) throws IOException {
             setLoggingLevel(level);
         }
     }
@@ -449,7 +440,7 @@ public class SimpleConsole {
         private String path;
 
         @Override
-        void doCommand( PrintWriter console) throws IOException {
+        void doCommand(PrintWriter console) throws IOException {
             String[] result = getSession().locate(path, false, false);
             for (String file : result) {
                 console.printf("%s\n", file);
@@ -463,10 +454,29 @@ public class SimpleConsole {
         private String path;
 
         @Override
-        void doCommand( PrintWriter console) throws IOException {
+        void doCommand(PrintWriter console) throws IOException {
             String checksum = getSession().query(XrootdProtocol.kXR_Qcksum, path);
             console.printf("%s\n", checksum);
         }
+    }
+
+    static class StatsCommand extends Command {
+
+        @Argument(metaVar = "arg", index = 0, required = false, usage = "Optional list of letters, each indicating the statistical components to be returned (default all)")
+        private String arg = "a";
+
+        @Override
+        void doCommand(PrintWriter console) throws IOException {
+            String result = getSession().query(XrootdProtocol.kXR_QStats,arg);
+            console.printf("%s\n", result);
+        }
+
+        @Override
+        void reset() {
+            super.reset();
+            arg = "a";
+        }
+
     }
 
     static class ConnectCommand extends Command {
@@ -477,7 +487,13 @@ public class SimpleConsole {
         private int port = 1094;
 
         @Override
-        void doCommand( PrintWriter console) throws IOException {
+        void reset() {
+            super.reset();
+            port = 1094;
+        }
+
+        @Override
+        void doCommand(PrintWriter console) throws IOException {
             Session session = new Session(host, port, System.getProperty("user.name"));
             setSession(session);
         }
@@ -486,7 +502,7 @@ public class SimpleConsole {
     static class DisconnectCommand extends Command {
 
         @Override
-        void doCommand( PrintWriter console) throws IOException {
+        void doCommand(PrintWriter console) throws IOException {
             setSession(null);
         }
     }
@@ -494,7 +510,7 @@ public class SimpleConsole {
     static class ProtocolCommand extends Command {
 
         @Override
-        void doCommand( PrintWriter console) throws IOException {
+        void doCommand(PrintWriter console) throws IOException {
             String protocol = getSession().protocol();
             console.println(protocol);
         }
@@ -502,30 +518,88 @@ public class SimpleConsole {
 
     static class GetCommand extends Command {
 
-        @Argument(metaVar = "path", index = 0, required = true, usage = "Path to file")
+        @Argument(metaVar = "source", index = 0, required = true, usage = "Source file")
         private String path;
+        @Argument(metaVar = "target", index = 1, required = false, usage = "Destination file")
+        private File dest;
+        @Option(name = "-q", usage = "Quiet mode")
+        private boolean quiet;
 
         @Override
-        void doCommand( PrintWriter console) throws IOException {
+        void reset() {
+            super.reset();
+            quiet = false;
+            dest = null;
+        }
+
+        @Override
+        void doCommand(PrintWriter console) throws IOException {
             File file = new File(path);
-            String local = file.getName();
-            int handle = getSession().open(path, 0, XrootdProtocol.kXR_open_read);
-            OutputStream out = new FileOutputStream(local);
+            File local = dest == null ? new File(file.getName()) : dest.isDirectory() ? new File(dest, file.getName()) : dest;
+            OpenFile openFile = getSession().open(path, 0, XrootdProtocol.kXR_open_read + XrootdProtocol.kXR_retstat);
+            FileOutputStream out = new FileOutputStream(local);
+            FileChannel fileChannel = out.getChannel();
             try {
-                byte[] buffer = new byte[65536];
-                int lTotal = 0;
-                for (;;) {
-                    int l = getSession().read(handle, buffer, lTotal);
+                long lTotal = 0;
+                long tStart = System.currentTimeMillis();
+                long tNext = tStart;
+                int bufferSize = 1000000;
+                // Note, this may be null for older servers
+                FileStatus status = openFile.getStatus();
+                if (status == null) {
+                    status = getSession().stat(path);
+                }
+                long fileSize = status.getSize();
+                for (long offset = 0;; offset += bufferSize) {
+                    ReadOperation ro = new ReadOperation(openFile, fileChannel, offset, bufferSize);
+                    int l = getSession().send(ro).getResponse();
                     if (l <= 0) {
+                        if (!quiet) {
+                            tNext = updateProgress(tNext, tStart, console, lTotal, fileSize, true);
+                        }
                         break;
                     }
-                    out.write(buffer, 0, l);
                     lTotal += l;
+                    if (!quiet) {
+                        tNext = updateProgress(tNext, tStart, console, lTotal, fileSize, false);
+                    }
                 }
             } finally {
-                getSession().close(handle);
-                out.close();
+                getSession().close(openFile);
+                fileChannel.close();
+                if (!quiet) {
+                    console.println();
+                }
             }
+        }
+
+        private long updateProgress(long tNext, long tStart, PrintWriter console, long current, long size, boolean finalUpdate) {
+            long tNow = System.currentTimeMillis();
+            if (finalUpdate || tNow > tNext) {
+                int progress = (int) (40 * current / size);
+
+                tNext = tNow + 100; // Update at 10Hz max
+                long elapsed = tNow - tStart;
+                console.print('[');
+                for (int i = 0; i < progress; i++) {
+                    console.print('*');
+                }
+                for (int i = progress; i < 40; i++) {
+                    console.print(' ');
+                }
+                console.print("]  ");
+                console.print(format.format(current));
+                console.print('/');
+                console.print(format.format(size));
+                console.print("  ");
+                if (finalUpdate || elapsed > 500) {
+                    console.print(format.format(1000 * current / elapsed));
+                    console.print("/sec");
+                }
+                console.print("    \r");
+                console.flush();
+            }
+            return tNext;
         }
     }
 
@@ -547,11 +621,11 @@ public class SimpleConsole {
         @Override
         void reset() {
             super.reset();
-            delete=force=mkpath=newFile=false;
+            delete = force = mkpath = newFile = false;
         }
-       
+
         @Override
-        void doCommand( PrintWriter console) throws IOException {
+        void doCommand(PrintWriter console) throws IOException {
             int options = 0;
             if (delete) {
                 options |= XrootdProtocol.kXR_delete;
@@ -565,7 +639,7 @@ public class SimpleConsole {
             if (newFile) {
                 options |= XrootdProtocol.kXR_new;
             }
-            int handle = getSession().open(path, 0, options);
+            OpenFile file = getSession().open(path, 0, options);
             InputStream in = new FileInputStream(local);
             try {
                 byte[] buffer = new byte[65536];
@@ -575,12 +649,72 @@ public class SimpleConsole {
                     if (l <= 0) {
                         break;
                     }
-                    getSession().write(handle, buffer, 0, l, lTotal);
+                    getSession().write(file, lTotal, buffer, 0, l);
                     lTotal += l;
                 }
             } finally {
-                getSession().close(handle);
+                getSession().close(file);
                 in.close();
+            }
+        }
+    }
+
+    private class ReadAheadConsole implements Runnable {
+
+        private ConsoleReader console;
+        private Thread readAheadThread = new Thread(this,"ReadAheadConsole");
+        private BlockingQueue<String> readAhead = new LinkedBlockingQueue<String>();
+        private final String END_OF_DATA = new String("EOD");
+
+        ReadAheadConsole() throws IOException {
+            console = new ConsoleReader(System.in, new PrintWriter(System.out), ReadAheadConsole.class.getResourceAsStream("keybindings.properties"));
+            File historyDir = new File(new File(System.getProperty("user.home")), ".scalla");
+            historyDir.mkdir();
+            File historyFile = new File(historyDir, "command.history");
+            History history = historyDir.canWrite() ? new History(historyFile) : new History();
+            console.setHistory(history);
+            console.addCompletor(new CommandCompletor());
+            console.addTriggeredAction(ConsoleOperations.CTRL_C, new ControlCListener());
+            readAheadThread.setDaemon(true);
+            readAheadThread.start();
+        }
+
+        private String readLine(String prompt) throws IOException {
+            try
+            {
+                if (readAhead.isEmpty())
+                {
+                    console.setDefaultPrompt(prompt);
+                    console.redrawLine();
+                    console.flushConsole();
+                }
+                String result = readAhead.take();
+                // Don't use .equals
+                if (result == END_OF_DATA) {
+                    console.printNewline();
+                    console.flushConsole();
+                    return null;
+                }
+                return result;
+            }
+            catch (InterruptedException x)
+            {
+                throw new InterruptedIOException("IO Error reading console");
+            }
+        }
+
+        public void run() {
+            for (;;)
+            {
+                try
+                {
+                    console.setDefaultPrompt("");
+                    String result = console.readLine();
+                    readAhead.offer(result == null ? END_OF_DATA : result);
+                }
+                catch (IOException x) {
+
+                }
             }
         }
     }

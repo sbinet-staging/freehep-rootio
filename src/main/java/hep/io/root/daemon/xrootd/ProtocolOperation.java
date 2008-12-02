@@ -1,6 +1,5 @@
 package hep.io.root.daemon.xrootd;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 
 
@@ -17,9 +16,8 @@ class ProtocolOperation extends Operation<String> {
         @Override
         String responseReady(Response response) throws IOException
         {
-            DataInputStream data = response.getInputStream();
-            int pval = data.readInt();
-            int flags = data.readInt();
+            int pval = response.readInt();
+            int flags = response.readInt();
             return pval+" "+flags;
         }
         

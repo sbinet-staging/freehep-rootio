@@ -8,11 +8,10 @@ import java.io.IOException;
  */
 abstract class Callback<V> {
     /**
-     * Called by the system when a response is ready. This method must completetly
-     * read the response before returning. Since xrootd support partial responses
+     * Called by the system when a response is ready. This method must completely
+     * read the response before returning. Since xrootd supports partial responses
      * this method may be called multiple times for a single message (in which case 
-     * <code>response.getStatus() -= XrootdProtocol.kXR_oksofar</code> for all but 
-     * the last call).
+     * <code>response.isComplete() == false</code> for all but the last call).
      * @param response The response
      * @return The final result of processing the response.
      * @throws java.io.IOException If there is an error reading the response

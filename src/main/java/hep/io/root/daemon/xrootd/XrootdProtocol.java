@@ -103,8 +103,11 @@ class XrootdProtocol
    final static int kXR_QStats = 1;
    final static int kXR_QPrep = 2; 
    final static int kXR_Qcksum = 3; 
-   final static int kXR_Qolbd = 4;
-   final static int kXR_Qmaxs = 5; 
+   final static int kXR_Qxattr = 4;
+   final static int kXR_Qspace = 5;
+   final static int kXR_Qckscan= 6;
+   final static int kXR_Qconfig= 7;
+   final static int kXR_Qvisa  = 8;
    
    final static int kXR_asyncap = 128;
    
