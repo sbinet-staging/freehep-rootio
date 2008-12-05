@@ -95,7 +95,7 @@ public class XrootdURLConnection extends URLConnection {
             date = status.getModTime().getTime();
             // Prepare to do a checksum
             // FIXME: The file location may contain the original redirector, which may result
-            // in the checksum being sent to the redurector
+            // in the checksum being sent to the redirector
             if (!dest.equals(status.getFileLocation())) {
                 session.close();
                 session = new Session(status.getFileLocation());
