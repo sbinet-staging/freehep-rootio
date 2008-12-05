@@ -74,6 +74,9 @@ class Dispatcher {
         public V responseReady(Response response) throws IOException {
             V result = chain.responseReady(response);
             if (response.isComplete()) {
+                // If the prerequisite was redirected we need the original message to be
+                // redirected too.
+                originalMessageExecutor.destination = response.getDestination();
                 resend(originalMessageExecutor);
             }
             return result;
@@ -158,7 +161,6 @@ class Dispatcher {
                 {
                    return;
                 }
-                if (multiplexor == null) resend(this,30,TimeUnit.SECONDS);
                 Multiplexor expectedMultiplexor = operation.getMultiplexor();
                 if (expectedMultiplexor != null && multiplexor != expectedMultiplexor)
                 {

@@ -32,19 +32,17 @@ class MultiplexorManager {
     private static MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
     private Map<Destination, Multiplexor> multiplexorMap = new HashMap<Destination, Multiplexor>();
     private Map<Destination, List<MultiplexorReadyCallback>> inProgressConnections = new HashMap<Destination, List<MultiplexorReadyCallback>>();
-    private MultiplexorSelector selector = new MultiplexorSelector();
     private ScheduledThreadPoolExecutor scheduler;
 
     MultiplexorManager(ScheduledThreadPoolExecutor scheduler) {
         this.scheduler = scheduler;
         scheduler.scheduleAtFixedRate(new IdleConnectionCloser(), 5, 5, TimeUnit.SECONDS);
-        selector.start();
     }
 
     private void createMultiplexor(Destination destination, int attempt) {
         Destination actualDestination = destination.getAlternateDestination(attempt);
         try {
-            Multiplexor multiplexor = new Multiplexor(actualDestination, selector);
+            Multiplexor multiplexor = new Multiplexor(actualDestination);
             multiplexor.connect(new LoginResponseListener(actualDestination, attempt));
         } catch (IOException x) {
             connectionFailed(actualDestination,attempt,x);
@@ -67,7 +65,7 @@ class MultiplexorManager {
     }
 
     /** If a multiplexor is ready to be used for the given destination, return it immediately
-     * otherwise return <code>void</code> and call the given multiplexor when the connection
+     * otherwise return <code>void</code> and call the given callback when the connection
      * becomes ready.
      */
     synchronized Multiplexor getMultiplexor(Destination destination, MultiplexorReadyCallback callback) {

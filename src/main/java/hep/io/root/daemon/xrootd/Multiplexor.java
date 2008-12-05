@@ -2,7 +2,6 @@ package hep.io.root.daemon.xrootd;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.BitSet;
 import java.util.Date;
@@ -22,13 +21,12 @@ class Multiplexor implements MultiplexorMBean {
     private static final int MAX_IDLE = Integer.getInteger("hep.io.root.daemon.xrootd.ConnectionTimeout", 60000);
     private static final int SEND_BUFFER_SIZE = Integer.getInteger("hep.io.root.daemon.xrootd.SendBufferSize", 65536);
     private static final int RECEIVE_BUFFER_SIZE = Integer.getInteger("hep.io.root.daemon.xrootd.ReceivedBufferSize", 65536);
-    private static final short HANDLE_ZERO = 0;
     private static Logger logger = Logger.getLogger(Multiplexor.class.getName());
     private Destination descriptor;
-    private SelectionKey key;
     private SocketChannel channel;
     private Response response;
     private BitSet handles = new BitSet();
+    private Thread thread;
     private Map<Short, ResponseListener> responseMap = new HashMap<Short, ResponseListener>();
     private boolean socketClosed = false;
     private long bytesSent;
@@ -38,68 +36,42 @@ class Multiplexor implements MultiplexorMBean {
     private int pval;
     private int flag;
 
-    Multiplexor(Destination desc, MultiplexorSelector selector) throws IOException {
+    Multiplexor(Destination desc) throws IOException {
         logger.fine(desc + " Creating multiplexor");
         this.descriptor = desc;
         channel = SocketChannel.open();
         channel.socket().setReceiveBufferSize(RECEIVE_BUFFER_SIZE);
         channel.socket().setSendBufferSize(SEND_BUFFER_SIZE);
-        channel.configureBlocking(false);
-        key = selector.register(channel, this);
+        thread = new Thread(new SocketReader(), "XrootdReader-" + this);
+        thread.setDaemon(true);
+        response = new Response(this, channel);
     }
 
     /**
-     * Asynchronously connect to the remote socket. The callback will be called
+     * Connect to the remote socket. The callback will be called
      * after the initial handshake is complete, or if an error occurs.
      * @param callback
      */
     void connect(ResponseListener listener) {
-        short id = addListener(listener);
-        try {
-            boolean ok = channel.connect(descriptor.getSocketAddress());
-
-            if (!ok) {
-                key.interestOps(SelectionKey.OP_CONNECT);
-                key.selector().wakeup();
-            } else {
-                sendInitialHandshake();
-            }
-        } catch (IOException x) {
-            listener.handleSocketError(x);
-            removeListener(id);
-        }
-    }
-
-    void finishConnect() {
-        try {
-            channel.finishConnect();
-            key.interestOps(SelectionKey.OP_READ);
-            sendInitialHandshake();
-        } catch (IOException x) {
-            responseMap.get(HANDLE_ZERO).handleSocketError(x);
-            removeListener(HANDLE_ZERO);
-        }
+        addListener(listener);
+        thread.start();
     }
 
     void handleInitialHandshakeResponse(Response response) throws IOException {
-        
+
         if (response.getLength() != 8) {
-           throw new IOException("Unexpected initial handshake length");
+            throw new IOException("Unexpected initial handshake length");
         }
         pval = response.readInt();
         flag = response.readInt();
     }
 
     private void sendInitialHandshake() throws IOException {
-        response = new Response(this, channel);
 
         ByteBuffer buffer = ByteBuffer.allocate(20);
         buffer.putInt(12, 4);
         buffer.putInt(16, 2012);
-        int count = channel.write(buffer);
-        if (count != buffer.limit()) {
-            throw new IOException("Could not send initial handshake");
-        }
+        bytesSent += channel.write(buffer);
     }
 
     boolean isSocketClosed() {
@@ -154,7 +126,6 @@ class Multiplexor implements MultiplexorMBean {
         return descriptor;
     }
 
-
     void sendMessage(Message message, ResponseListener listener) throws IOException {
         short id = addListener(listener);
         try {
@@ -167,9 +138,7 @@ class Multiplexor implements MultiplexorMBean {
 
     void close() {
         socketClosed = true;
-        responseMap.clear();
         try {
-            key.cancel();
             if (channel.isConnected()) {
                 channel.close();
             }
@@ -180,7 +149,8 @@ class Multiplexor implements MultiplexorMBean {
 
     @Override
     public String toString() {
-        return descriptor.toString();
+
+        return descriptor.toString()+";"+channel.socket().getLocalPort();
     }
 
     private synchronized short addListener(ResponseListener listener) {
@@ -200,24 +170,6 @@ class Multiplexor implements MultiplexorMBean {
         lastActive.setTime(System.currentTimeMillis());
     }
 
-    /** 
-     * Called by the selector whenever a response is ready to be read
-     * 
-     */
-    synchronized void readResponse() {
-        try {
-            if (!response.isInProgress()) {
-                // FIXME: Blah
-                bytesReceived += response.read();
-            }
-            handleResponse();
-        } catch (Response.ResponseIncomplete x) {
-            // OK, nothing to do
-        } catch (IOException x) {
-            handleSocketException(x);
-        }
-    }
-
     private void handleResponse() throws IOException {
         int status = response.getStatus();
         final Short handle = response.getHandle();
@@ -231,10 +183,10 @@ class Multiplexor implements MultiplexorMBean {
             if (status == XrootdProtocol.kXR_error) {
                 int rc = response.readInt();
                 String message = response.getDataAsString();
-                logger.log(Level.SEVERE, descriptor + " Out-of-band error " + rc + ": " + message);
+                logger.log(Level.SEVERE, this + " Out-of-band error " + rc + ": " + message);
                 return; // Just carry on in this case??
             }
-            throw new IOException(descriptor + " No handler found for handle " + handle + " (status=" + status + ")");
+            throw new IOException(this + " No handler found for handle " + handle + " (status=" + status + ")");
         }
         switch (status) {
             case XrootdProtocol.kXR_error:
@@ -247,7 +199,7 @@ class Multiplexor implements MultiplexorMBean {
             case XrootdProtocol.kXR_wait:
                 int seconds = response.readInt();
                 message = response.getDataAsString();
-                logger.info(descriptor + " wait: " + message + " seconds=" + seconds);
+                logger.info(this + " wait: " + message + " seconds=" + seconds);
                 handler.reschedule(seconds, TimeUnit.SECONDS);
                 removeListener(handle);
                 break;
@@ -255,13 +207,13 @@ class Multiplexor implements MultiplexorMBean {
             case XrootdProtocol.kXR_waitresp:
                 seconds = response.readInt();
                 message = response.getDataAsString();
-                logger.fine(descriptor + " waitresp: " + message + " seconds=" + seconds);
+                logger.fine(this + " waitresp: " + message + " seconds=" + seconds);
                 break;
 
             case XrootdProtocol.kXR_redirect:
                 int port = response.readInt();
                 String host = response.getDataAsString();
-                logger.fine(descriptor + " redirect: " + host + " " + port);
+                logger.fine(this + " redirect: " + host + " " + port);
                 handler.handleRedirect(host, port);
                 removeListener(handle);
                 break;
@@ -292,13 +244,35 @@ class Multiplexor implements MultiplexorMBean {
 
     private void handleSocketException(IOException x) {
         if (!socketClosed) {
-            logger.log(Level.WARNING, descriptor + " Unexpected IO exception on socket", x);
+            logger.log(Level.WARNING, this + " Unexpected IO exception on socket", x);
+            close();
             // Notify anyone listening for a response that we are dead
             for (ResponseListener listener : responseMap.values()) {
-                logger.fine(descriptor + " sending handleSocketError to " + listener);
+                logger.fine(this + " sending handleSocketError to " + listener);
                 listener.handleSocketError(x);
             }
-            close();
+            responseMap.clear();
+        }
+    }
+
+    private class SocketReader implements Runnable {
+
+        public void run() {
+            try {
+                channel.connect(descriptor.getSocketAddress());
+                sendInitialHandshake();
+
+                for (; !thread.isInterrupted();) {
+
+                    bytesReceived += response.read();
+                    handleResponse();
+                }
+                logger.log(Level.FINE, this + " multiplexor thread exiting due to interrupt!");
+            } catch (IOException x) {
+                handleSocketException(x);
+            } catch (Throwable x) {
+                logger.log(Level.SEVERE, this + " multiplexor thread dead!", x);
+            }
         }
     }
 }

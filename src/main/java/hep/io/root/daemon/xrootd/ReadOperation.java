@@ -102,10 +102,12 @@ class ReadOperation extends Operation<Integer> {
 
         public Integer responseReady(Response response) throws IOException {
             // FIXME: If this fails how do we know if it is a socket problem or a file problem?
-            long l = fileChannel.transferFrom(response.getSocketChannel(), bufOffset+readLength, Math.min(response.getRemaining(),bufLength-readLength));
+            long l = fileChannel.transferFrom(response.getSocketChannel(), bufOffset+readLength, response.getLength());
             if (l<0) throw new EOFException();
+            if (l < response.getLength()) {
+                throw new IOException("Incomplete response received");
+            }
             readLength += l;
-            response.incrementDataRead((int) l);
             return readLength == 0 ? -1 : (int) readLength;
         }
 

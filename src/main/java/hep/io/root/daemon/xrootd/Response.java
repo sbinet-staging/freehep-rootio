@@ -20,9 +20,7 @@ class Response {
     private Short handle;
     private int status;
     private int dataLength;
-    private int dataRead;
     private static Logger logger = Logger.getLogger(Response.class.getName());
-    private IOException responseIncomplete = new ResponseIncomplete();
 
     /**
      * Create a response object for reading from a specific mumtiiplexor
@@ -36,26 +34,6 @@ class Response {
 
     SocketChannel getSocketChannel() {
         return in;
-    }
-
-    /**
-     * In progess means that only a partial response has so far been read (as
-     * a result of the non-blocking socket IO used by the multiplexor).
-     */
-    boolean isInProgress() {
-        return dataRead<dataLength;
-    }
-
-    /**
-     * Find how much data is still to be read in this response
-     * @return
-     */
-    int getRemaining() {
-        return dataLength - dataRead;
-    }
-
-    void incrementDataRead(int l) {
-        dataRead += l;
     }
 
     /**
@@ -76,6 +54,7 @@ class Response {
         readData();
         return data;
     }
+
     /**
      * Read the remaining data associated with this response and convert it
      * to a String.
@@ -91,27 +70,29 @@ class Response {
     }
 
     void readData() throws IOException {
-        if (isInProgress()) {
-            if (data == null) data = ByteBuffer.allocate(dataLength);
+        if (data == null) {
+            data = ByteBuffer.allocate(dataLength);
             readBuffer(data);
             data.flip();
         }
     }
-
+    /** Read data into the given byte buffer, which must be large enough to accept
+     * the entire data section of the response.
+     * @param buffer
+     * @throws java.io.IOException
+     */
     void readData(ByteBuffer buffer) throws IOException {
         int oldLimit = -1;
-        try
-        {
-            if (buffer.remaining()+dataRead > dataLength)
-            {
+        try {
+            if (buffer.remaining() > dataLength) {
                 oldLimit = buffer.limit();
-                buffer.limit(buffer.position()+dataLength-dataRead);
+                buffer.limit(buffer.position() + dataLength);
             }
             readBuffer(buffer);
-        }
-        finally
-        {
-            if (oldLimit >= 0) buffer.limit(oldLimit);
+        } finally {
+            if (oldLimit >= 0) {
+                buffer.limit(oldLimit);
+            }
         }
     }
 
@@ -120,28 +101,28 @@ class Response {
     }
 
     boolean isComplete() {
-        return status != XrootdProtocol.kXR_oksofar && !isInProgress();
+        return status != XrootdProtocol.kXR_oksofar;
     }
 
     int read() throws IOException {
-        if (!isInProgress()) buffer.clear();
+        buffer.clear();
         readBuffer(buffer);
         buffer.flip();
         handle = buffer.getShort();
         status = buffer.getShort();
         dataLength = buffer.getInt();
         data = null;
-        dataRead = 0;
         logger.finest("<-" + handle + " " + status + " " + dataLength);
         return 8 + dataLength;
     }
+
     void regurgitate() {
         handle = data.getShort();
         status = data.getShort();
         dataLength = data.getInt();
-        dataRead = dataLength;
         logger.finest("<-" + handle + " " + status + " " + dataLength);
     }
+
     int getStatus() {
         return status;
     }
@@ -156,19 +137,15 @@ class Response {
 
     @Override
     public String toString() {
-        return String.format("Response handle: %d status: %d dataLength: %d dataRead: %d",handle,status,dataLength,dataRead);
+        return String.format("Response handle: %d status: %d dataLength: %d", handle, status, dataLength);
     }
 
     private void readBuffer(ByteBuffer buffer) throws EOFException, IOException {
-        int l = in.read(buffer);
-        if (l < 0) {
-            throw new EOFException();
+        while (buffer.remaining()>0) {
+            int l = in.read(buffer);
+            if (l < 0) {
+                throw new EOFException();
+            }
         }
-        dataRead += l;
-        if (buffer.remaining() > 0) {
-            throw responseIncomplete;
-        }
-    }
-    class ResponseIncomplete extends IOException {
     }
 }
