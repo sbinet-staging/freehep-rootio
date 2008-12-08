@@ -62,7 +62,11 @@ class Response {
      */
     String getDataAsString() throws IOException {
         readData();
-        return new String(data.array(), data.position(), data.remaining(), "US-ASCII");
+        byte[] dataArray = data.array();
+        int start = data.position();
+        int length = data.remaining();
+        if (dataArray[start+length-1]==0) length--; // Trim trailing 0 (if any)
+        return new String(dataArray,start,length, "US-ASCII");
     }
 
     Multiplexor getMultiplexor() {

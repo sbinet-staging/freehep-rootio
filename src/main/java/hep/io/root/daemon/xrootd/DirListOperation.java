@@ -2,6 +2,7 @@ package hep.io.root.daemon.xrootd;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -31,18 +32,7 @@ class DirListOperation extends Operation<List<String>> {
 
         List<String> responseReady(Response response) throws IOException {
             String files = response.getDataAsString();
-            int pos = 0;
-            for (int i = 0; i < files.length(); i++) {
-                char c = files.charAt(i);
-                if (c == '\n' || c == '\0') {
-                    dirListResult.add(files.substring(pos, i));
-                    if (c == '\0') {
-                        break;
-                    }
-                    pos = i + 1;
-                }
-            }
-            return dirListResult;
+            return Arrays.asList(files.split("\\n"));
         }
 
         @Override
