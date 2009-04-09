@@ -42,7 +42,7 @@ class CloneBuilder implements ClassBuilder, Constants
       String clonesClassName = "hep.io.root.clones." + klass.getClassName();
       ClassGen cg = new ClassGen(className, "hep/io/root/core/Clone", "<generated>", ACC_PUBLIC | ACC_SUPER, new String[]
          {
-            nameMangler.mangleClass(klass.getClassName())
+            nameMangler.mangleInterfaceName(klass.getClassName())
          });
       ConstantPoolGen cp = cg.getConstantPool();
       InstructionList il = new InstructionList();

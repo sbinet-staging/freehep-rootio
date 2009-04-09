@@ -63,7 +63,7 @@ public class InterfaceBuilder
 
    public File write(RootClass klass) throws IOException
    {
-      String klassPath = nameMangler.mangleClass(klass.getClassName());
+      String klassPath = nameMangler.mangleInterfaceName(klass.getClassName());
       StringBuffer packidge = new StringBuffer();
       File file = base;
       StringTokenizer t = new StringTokenizer(klassPath, ".");
@@ -96,7 +96,7 @@ public class InterfaceBuilder
 
       RootClass[] superClasses = klass.getSuperClasses();
       for (int i = 0; i < superClasses.length; i++)
-         out.print(", " + nameMangler.mangleClass(superClasses[i].getClassName()));
+         out.print(", " + nameMangler.mangleInterfaceName(superClasses[i].getClassName()));
       out.println();
       out.println("{");
 

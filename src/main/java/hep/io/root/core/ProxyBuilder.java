@@ -37,10 +37,10 @@ class ProxyBuilder implements ClassBuilder, Constants
    
    public JavaClass build(GenericRootClass klass)
    {
-      String className = getStem() + "." + klass.getClassName();
+      String className = nameMangler.mangleClassName(getStem(),klass.getClassName());
       ClassGen cg = new ClassGen(className, "hep/io/root/core/AbstractRootObject", "<generated>", ACC_PUBLIC | ACC_SUPER, new String[]
       {
-         nameMangler.mangleClass(klass.getClassName())
+         nameMangler.mangleInterfaceName(klass.getClassName())
       });
       ConstantPoolGen cp = cg.getConstantPool();
       InstructionList il = new InstructionList();
@@ -109,7 +109,7 @@ class ProxyBuilder implements ClassBuilder, Constants
       Class implementedInterface = null;
       try
       {
-         implementedInterface = Class.forName(nameMangler.mangleClass(klass.getClassName()));
+         implementedInterface = Class.forName(nameMangler.mangleInterfaceName(klass.getClassName()));
       }
       catch (ClassNotFoundException x) 
       {

@@ -21,6 +21,7 @@ import org.apache.bcel.generic.Type;
 public class GenericRootClass extends BasicRootClass
 {
    private final static Type rootObjectType = new ObjectType("hep.io.root.RootObject");
+   private static NameMangler nameMangler = NameMangler.instance();
    private Class javaClass;
    private Class proxyClass;
    private RootClassFactory factory;
@@ -148,7 +149,7 @@ public class GenericRootClass extends BasicRootClass
    private Class getProxyClass()
    {
       if (proxyClass == null)
-         proxyClass = getClass("hep.io.root.proxy." + name);
+         proxyClass = getClass(nameMangler.mangleClassName("hep.io.root.proxy",name));
       return proxyClass;
    }
 }

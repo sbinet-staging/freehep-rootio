@@ -26,9 +26,9 @@ public class InterfaceBuilder implements ClassBuilder, Constants
       String[] superClassNames = new String[superClasses.length + 1];
       superClassNames[0] = "hep.io.root.RootObject";
       for (int i = 0; i < superClasses.length; i++)
-         superClassNames[i + 1] = nameMangler.mangleClass(superClasses[i].getClassName());
+         superClassNames[i + 1] = nameMangler.mangleInterfaceName(superClasses[i].getClassName());
 
-      ClassGen cg = new ClassGen(nameMangler.mangleClass(klass.getClassName()), "java/lang/Object", "<generated>", ACC_PUBLIC | ACC_INTERFACE | ACC_ABSTRACT, superClassNames);
+      ClassGen cg = new ClassGen(nameMangler.mangleInterfaceName(klass.getClassName()), "java/lang/Object", "<generated>", ACC_PUBLIC | ACC_INTERFACE | ACC_ABSTRACT, superClassNames);
       ConstantPoolGen cp = cg.getConstantPool();
 
       RootMember[] members = klass.getMembers();

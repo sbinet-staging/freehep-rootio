@@ -1,8 +1,3 @@
-/*
- * RootClassLoader.java
- *
- * Created on December 20, 2001, 6:12 PM
- */
 package hep.io.root.core;
 
 import hep.io.root.*;

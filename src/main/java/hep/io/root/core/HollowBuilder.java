@@ -58,7 +58,7 @@ public class HollowBuilder implements ClassBuilder, Constants
       String className = "hep.io.root.hollow." + klass.getClassName();
       ClassGen cg = new ClassGen(className, "hep/io/root/core/Hollow", "<generated>", ACC_PUBLIC | ACC_SUPER, new String[]
       {
-         nameMangler.mangleClass(klass.getClassName())
+         nameMangler.mangleInterfaceName(klass.getClassName())
       });
       ConstantPoolGen cp = cg.getConstantPool();
       InstructionList il = new InstructionList();

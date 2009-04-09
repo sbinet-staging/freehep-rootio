@@ -1,15 +1,14 @@
-/*
- * FileClassFactory.java
- *
- * Created on January 8, 2001, 1:30 PM
- */
 package hep.io.root.core;
 
-import hep.io.root.*;
-import hep.io.root.interfaces.*;
-
+import hep.io.root.RootClassNotFound;
+import hep.io.root.RootFileReader;
+import hep.io.root.interfaces.TKey;
+import hep.io.root.interfaces.TStreamerInfo;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 
 /**

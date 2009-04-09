@@ -1,10 +1,4 @@
-/*
- * DefaultNameMangler.java
- *
- * Created on June 1, 2001, 9:51 PM
- */
 package hep.io.root.core;
-
 
 /**
  * Controls name mangling when building Java interfaces for Root classes.
@@ -29,7 +23,15 @@ public class NameMangler
     * <li>Prepends hep.io.root.interfaces
     * <ul>
     */
-   public String mangleClass(String in)
+   public String mangleInterfaceName(String in)
+   {
+      return mangleClassName("hep.io.root.interfaces",in);
+   }
+   String mangleClassName(String prefix, String in)
+   {
+      return prefix+"."+mangleName(in);
+   }
+   String mangleName(String in)
    {
       for (;;)
       {
@@ -38,7 +40,7 @@ public class NameMangler
             break;
          in = in.substring(0, pos).toLowerCase() + "." + in.substring(pos + 2);
       }
-      return "hep.io.root.interfaces." + in;
+      return escapeIllegalCharacters(in);
    }
 
    /**
@@ -66,5 +68,11 @@ public class NameMangler
             in = Character.toUpperCase(in.charAt(0)) + in.substring(1);
       }
       return "get" + in;
+   }
+
+   private String escapeIllegalCharacters(String in) {
+      in = in.replace("<", "$LT$");
+      in = in.replace(">", "$GT$");
+      return in;
    }
 }
