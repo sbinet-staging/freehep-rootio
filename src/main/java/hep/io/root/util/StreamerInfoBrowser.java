@@ -1,8 +1,3 @@
-/*
- * StreamerInfoBrowser.java
- *
- * Created on June 2, 2001, 4:53 PM
- */
 package hep.io.root.util;
 
 import hep.io.root.RootObject;

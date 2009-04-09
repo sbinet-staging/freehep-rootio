@@ -1,10 +1,14 @@
 package hep.io.root.core;
 
-import hep.io.root.*;
-
-import java.lang.reflect.*;
-import org.apache.bcel.generic.*;
+import hep.io.root.RootMember;
+import hep.io.root.RootObject;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.InstructionFactory;
+import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.Type;
+
 
 /**
  *

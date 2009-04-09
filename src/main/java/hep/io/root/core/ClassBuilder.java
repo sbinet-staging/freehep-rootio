@@ -1,8 +1,3 @@
-/*
- * ClassBuilder.java
- *
- * Created on December 20, 2001, 6:22 PM
- */
 package hep.io.root.core;
 
 import org.apache.bcel.classfile.JavaClass;

@@ -1,15 +1,10 @@
-/*
- * CloneLeaf.java
- *
- * Created on January 10, 2002, 4:52 PM
- */
 package hep.io.root.core;
 
-import hep.io.root.*;
-import hep.io.root.interfaces.*;
-
-import java.util.*;
-
+import hep.io.root.RootClass;
+import hep.io.root.interfaces.TBranchClones;
+import hep.io.root.interfaces.TClonesArray;
+import hep.io.root.interfaces.TLeafI;
+import java.util.AbstractList;
 
 /**
  * A HollowArray is used to represent a split TClonesArray.

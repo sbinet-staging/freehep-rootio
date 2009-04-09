@@ -1,7 +1,6 @@
 package hep.io.root.core;
 
-import hep.io.root.*;
-
+import hep.io.root.RootClassNotFound;
 
 /**
  * Creates RootClass objects

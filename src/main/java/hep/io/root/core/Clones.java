@@ -1,8 +1,3 @@
-/*
- * Clones.java
- *
- * Created on January 3, 2002, 6:33 PM
- */
 package hep.io.root.core;
 
 

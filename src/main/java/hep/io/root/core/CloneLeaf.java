@@ -1,16 +1,15 @@
-/*
- * CloneLeaf.java
- *
- * Created on January 10, 2002, 4:52 PM
- */
 package hep.io.root.core;
 
-import hep.io.root.*;
-import hep.io.root.interfaces.*;
-
+import hep.io.root.RootClass;
+import hep.io.root.interfaces.TBranch;
+import hep.io.root.interfaces.TBranchClones;
+import hep.io.root.interfaces.TLeaf;
+import hep.io.root.interfaces.TLeafObject;
 import org.apache.bcel.Constants;
-import org.apache.bcel.generic.*;
-
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.InstructionFactory;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.Type;
 
 /**
  *

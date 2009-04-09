@@ -1,13 +1,14 @@
 package hep.io.root.core;
 
-import hep.io.root.*;
+import hep.io.root.RootClassNotFound;
+import hep.io.root.RootFileReader;
 import hep.io.root.test.JasminVisitor;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.bcel.classfile.JavaClass;
-
-import java.io.*;
-import java.util.*;
-
 
 /**
  *
@@ -19,7 +20,7 @@ public class RootClassLoader extends ClassLoader
    private Map classMap = new HashMap();
    private Map map = new HashMap();
    private RootFileReader rfr;
-   private static Object bcel = new Object();
+   private final static Object bcel = new Object();
 
    RootClassLoader(RootFileReader rfr)
    {
@@ -46,8 +47,11 @@ public class RootClassLoader extends ClassLoader
          if (builder == null)
             throw new ClassNotFoundException(name);
 
-         String className = name.substring(pos + 1);
-         GenericRootClass gc = (GenericRootClass) rfr.getFactory().create(className);
+         String rootClassName = name.substring(pos + 1);
+         // FIXME: Do something better
+         rootClassName = rootClassName.replace("$LT$","<");
+         rootClassName = rootClassName.replace("$GT$",">");
+         GenericRootClass gc = (GenericRootClass) rfr.getFactory().create(rootClassName);
          JavaClass jc;
          // BCEL is not thread safe, so class building must be synchronized
          synchronized (bcel)

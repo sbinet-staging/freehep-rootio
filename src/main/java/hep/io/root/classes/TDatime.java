@@ -1,9 +1,9 @@
 package hep.io.root.classes;
 
-import hep.io.root.core.*;
-
-import org.apache.bcel.generic.*;
-
+import hep.io.root.core.GenericRootClass;
+import hep.io.root.core.StreamerInfo;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.Type;
 
 /**
  *

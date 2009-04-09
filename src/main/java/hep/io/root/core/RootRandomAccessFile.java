@@ -1,10 +1,11 @@
 package hep.io.root.core;
 
-import hep.io.root.*;
-
-import java.io.*;
+import hep.io.root.RootFileReader;
+import hep.io.root.RootObject;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.Hashtable;
-
 
 /**
  * @author Tony Johnson (tonyj@slac.stanford.edu)

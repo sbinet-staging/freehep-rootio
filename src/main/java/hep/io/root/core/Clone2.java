@@ -1,11 +1,7 @@
-/*
- * Clone.java
- *
- * Created on January 5, 2002, 12:35 AM
- */
 package hep.io.root.core;
 
-import hep.io.root.*;
+import hep.io.root.RootClass;
+import hep.io.root.RootObject;
 
 
 /**

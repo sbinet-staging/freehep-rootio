@@ -1,20 +1,39 @@
 package hep.io.root.util;
 
-import hep.io.root.*;
+import hep.io.root.RootClassNotFound;
+import hep.io.root.RootFileReader;
 import hep.io.root.daemon.RootAuthenticator;
 import hep.io.root.daemon.RootURLStreamFactory;
-import hep.io.root.interfaces.*;
-import hep.io.root.util.RootDirectoryTreeCellRenderer;
-import javax.swing.*;
-import javax.swing.event.*;
-import javax.swing.tree.*;
-import java.io.*;
-import java.awt.*;
-import java.awt.event.*;
-import jas.hist.*;
+
+import hep.io.root.interfaces.TH1;
+import hep.io.root.interfaces.TKey;
+import jas.hist.DataSource;
+import jas.hist.JASHist;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.IOException;
 import java.net.Authenticator;
 import java.net.URL;
 import java.net.URLConnection;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTree;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreePath;
 
 /**
  * A simple application for browsing histograms in Root Files

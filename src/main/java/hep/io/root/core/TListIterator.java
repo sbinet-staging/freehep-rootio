@@ -1,8 +1,3 @@
-/*
- * TListIterator.java
- *
- * Created on January 3, 2002, 11:31 AM
- */
 package hep.io.root.core;
 
 /**

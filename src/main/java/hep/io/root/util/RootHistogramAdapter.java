@@ -1,7 +1,17 @@
 package hep.io.root.util;
 
-import hep.io.root.interfaces.*;
-import jas.hist.*;
+import hep.io.root.interfaces.TH1;
+import hep.io.root.interfaces.TH1D;
+import hep.io.root.interfaces.TH1F;
+import hep.io.root.interfaces.TH2;
+import hep.io.root.interfaces.TH2D;
+import hep.io.root.interfaces.TH2F;
+import jas.hist.DataSource;
+import jas.hist.HasStatistics;
+import jas.hist.Rebinnable1DHistogramData;
+import jas.hist.Rebinnable2DHistogramData;
+import jas.hist.Statistics;
+
 
 class RootHistogramAdapter
 {

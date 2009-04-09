@@ -1,12 +1,15 @@
 package hep.io.root.core;
 
-import hep.io.root.*;
+import hep.io.root.RootClass;
+import hep.io.root.RootClassNotFound;
+import hep.io.root.RootFileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Properties;
 
-import java.io.*;
-import java.util.*;
-
-
-/**
+/*
  * The root class factory is used to create instances
  * of RootClass object.
  * @author Tony Johnson (tonyj@slac.stanford.edu)

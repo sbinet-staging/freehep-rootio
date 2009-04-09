@@ -1,9 +1,13 @@
 package hep.io.root.util;
 
-import hep.io.root.*;
-import hep.io.root.interfaces.*;
-import javax.swing.tree.*;
+import hep.io.root.RootClass;
+import hep.io.root.RootClassNotFound;
+import hep.io.root.interfaces.TDirectory;
+import hep.io.root.interfaces.TH1;
+import hep.io.root.interfaces.TKey;
 import java.io.IOException;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreePath;
 
 /**
  * An adaptor that converts a root TDirectory into

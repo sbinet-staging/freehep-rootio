@@ -1,11 +1,17 @@
 package hep.io.root.util;
 
-import hep.io.root.*;
-import hep.io.root.interfaces.*;
-
-import java.io.*;
-import java.util.*;
-
+import hep.io.root.RootClass;
+import hep.io.root.RootFileReader;
+import hep.io.root.RootMember;
+import hep.io.root.interfaces.TStreamerInfo;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.StringTokenizer;
 
 /**
  * Builds a Java interface corresponding to a RootClass.

@@ -1,6 +1,7 @@
 package hep.io.root.core;
 
-import hep.io.root.*;
+import hep.io.root.RootClass;
+import hep.io.root.RootObject;
 
 
 public abstract class Hollow implements RootObject, hep.io.root.interfaces.TObject

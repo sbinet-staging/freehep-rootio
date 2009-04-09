@@ -1,10 +1,4 @@
-/*
- * WrongLengthException.java
- *
- * Created on January 2, 2002, 11:09 AM
- */
 package hep.io.root.core;
-
 
 /**
  *

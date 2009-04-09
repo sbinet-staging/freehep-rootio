@@ -10,7 +10,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultTreeCellRenderer;
 
-
 /**
  * A TreeCellRenderer for StreamerInfo objects.
  * @author Tony Johnson (tonyj@slac.stanford.edu)

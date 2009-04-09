@@ -1,13 +1,7 @@
-/*
- * RootObjectTreeCellRenderer.java
- *
- * Created on January 18, 2001, 2:43 PM
- */
 package hep.io.root.util;
 
-import javax.swing.*;
-import javax.swing.tree.*;
-
+import javax.swing.JTree;
+import javax.swing.tree.DefaultTreeCellRenderer;
 
 /**
  * A TreeCellRenderer for use with RootObjectTreeModel.

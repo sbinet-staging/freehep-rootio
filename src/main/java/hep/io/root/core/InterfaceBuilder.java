@@ -1,11 +1,14 @@
 package hep.io.root.core;
 
-import hep.io.root.*;
-
-import org.apache.bcel.*;
-import org.apache.bcel.classfile.*;
-import org.apache.bcel.generic.*;
-
+import hep.io.root.RootClass;
+import hep.io.root.RootMember;
+import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.generic.ClassGen;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.FieldGen;
+import org.apache.bcel.generic.MethodGen;
+import org.apache.bcel.generic.Type;
 
 /**
  * Creates a Java interface with accessor methods for each root member

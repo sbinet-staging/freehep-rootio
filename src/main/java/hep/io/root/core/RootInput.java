@@ -1,9 +1,8 @@
 package hep.io.root.core;
 
-import hep.io.root.*;
-
-import java.io.*;
-
+import hep.io.root.RootObject;
+import java.io.DataInput;
+import java.io.IOException;
 
 /**
  * Extension of DataInput with root specific utilities

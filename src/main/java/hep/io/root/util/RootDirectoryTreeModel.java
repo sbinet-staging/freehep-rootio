@@ -1,11 +1,18 @@
 package hep.io.root.util;
 
-import hep.io.root.*;
-import hep.io.root.interfaces.*;
-
+import hep.io.root.RootClass;
+import hep.io.root.RootClassNotFound;
+import hep.io.root.RootObject;
+import hep.io.root.interfaces.TBranch;
+import hep.io.root.interfaces.TBranchClones;
+import hep.io.root.interfaces.TDirectory;
+import hep.io.root.interfaces.TKey;
+import hep.io.root.interfaces.TLeaf;
+import hep.io.root.interfaces.TNamed;
+import hep.io.root.interfaces.TTree;
 import java.io.IOException;
-
-import javax.swing.tree.*;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreePath;
 
 
 /**

@@ -1,19 +1,14 @@
-/*
- * AbstractRootObject.java
- *
- * Created on December 19, 2001, 3:48 PM
- */
 package hep.io.root.core;
 
-import hep.io.root.*;
-
-import java.io.*;
-import java.lang.reflect.*;
-
+import hep.io.root.RootClass;
+import hep.io.root.RootObject;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.reflect.Field;
 
 /**
  *
- * @author  tonyj
+ * @author tonyj
  */
 public abstract class AbstractRootObject implements RootObject
 {

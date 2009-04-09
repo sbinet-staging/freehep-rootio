@@ -1,10 +1,9 @@
 package hep.io.root.core;
 
-import hep.io.root.*;
-import hep.io.root.interfaces.*;
-
-import java.util.*;
-
+import hep.io.root.RootClass;
+import hep.io.root.interfaces.TLeaf;
+import hep.io.root.interfaces.TObjArray;
+import java.util.AbstractList;
 
 /**
  *

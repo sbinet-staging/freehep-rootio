@@ -1,7 +1,8 @@
 package hep.io.root.core;
 
-import org.apache.bcel.generic.*;
-
+import org.apache.bcel.generic.ArrayType;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.Type;
 
 /**
  *

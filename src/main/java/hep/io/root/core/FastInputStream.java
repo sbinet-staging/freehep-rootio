@@ -1,13 +1,14 @@
 package hep.io.root.core;
 
-import hep.io.root.*;
-
-import java.io.*;
-import java.nio.*;
-import java.nio.channels.*;
+import hep.io.root.RootFileReader;
+import hep.io.root.RootObject;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.HashMap;
-import java.util.zip.*;
-
+import java.util.zip.Inflater;
 
 /**
  *
@@ -251,7 +252,6 @@ public class FastInputStream implements RootInput
    {
       int actualLength = maxLength - 1;
       byte[] data = new byte[maxLength];
-      ;
       for (int i = 0; i < maxLength; i++)
       {
          data[i] = buffer.get();

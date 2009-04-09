@@ -1,16 +1,8 @@
-/*
- * StreamerInfoTreeModel.java
- *
- * Created on June 2, 2001, 4:09 PM
- */
 package hep.io.root.util;
 
-import hep.io.root.interfaces.*;
-
-import java.util.*;
-
-import javax.swing.tree.*;
-
+import hep.io.root.interfaces.TStreamerInfo;
+import java.util.List;
+import javax.swing.tree.TreeModel;
 
 /**
  * A tree model for viewing StreamerInfo in a root file

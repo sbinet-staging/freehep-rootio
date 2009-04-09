@@ -1,13 +1,7 @@
-/*
- * StreamerInfo.java
- *
- * Created on January 8, 2001, 2:06 PM
- */
 package hep.io.root.core;
 
 import hep.io.root.RootClass;
 import hep.io.root.RootClassNotFound;
-
 
 /**
  * Interface implemented by both StreamerInfoString and StreamerInfoNew

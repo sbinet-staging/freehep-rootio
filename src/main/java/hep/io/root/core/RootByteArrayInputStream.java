@@ -1,7 +1,6 @@
 package hep.io.root.core;
 
-import java.io.*;
-
+import java.io.ByteArrayInputStream;
 
 /**
  * A ByteArrayInputStream that will reveal its current

@@ -1,19 +1,23 @@
 package hep.io.root.core;
 
-
-/*
- * InterfaceBuilder.java
- *
- * Created on December 17, 2001, 5:11 PM
- */
-import hep.io.root.*;
-
-import org.apache.bcel.*;
-import org.apache.bcel.classfile.*;
-import org.apache.bcel.generic.*;
-
-import java.util.*;
-
+import hep.io.root.RootClass;
+import hep.io.root.RootMember;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.generic.ArrayType;
+import org.apache.bcel.generic.ClassGen;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.FieldGen;
+import org.apache.bcel.generic.InstructionConstants;
+import org.apache.bcel.generic.InstructionFactory;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.MethodGen;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.PUSH;
+import org.apache.bcel.generic.Type;
 
 /**
  * Builds a class which extends Clone and represents one item in a TClonesArray.
