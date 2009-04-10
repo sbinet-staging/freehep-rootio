@@ -44,8 +44,8 @@ class Clone2Builder implements ClassBuilder, Constants
    {
       optimize = (klass.getStreamerInfo().getBits() & (1 << 12)) == 0;
 
-      String className = getStem() + "." + klass.getClassName();
-      String clonesClassName = nameMangler.mangleFullClassName(getStem(),klass.getClassName());
+      String className = nameMangler.mangleFullClassName(getStem(),klass.getClassName());
+      String clonesClassName = nameMangler.mangleFullClassName("hep.io.root.clones2",klass.getClassName());
       ClassGen cg = new ClassGen(className, "hep/io/root/core/Clone2", "<generated>", ACC_PUBLIC | ACC_SUPER, new String[]
          {
             nameMangler.mangleInterfaceName(klass.getClassName())
