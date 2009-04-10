@@ -11,16 +11,18 @@ import java.util.Map;
 import org.apache.bcel.classfile.JavaClass;
 
 /**
- *
+ * A classloader which can dynamically create classes based on the streamer info
+ * objects in a root file.
  * @author tonyj
  */
 public class RootClassLoader extends ClassLoader
 {
    private final static boolean debugRoot = System.getProperty("debugRoot") != null;
-   private Map classMap = new HashMap();
-   private Map map = new HashMap();
+   private Map<Class,GenericRootClass> classMap = new HashMap<Class,GenericRootClass>();
+   private Map<String,ClassBuilder> stemMap = new HashMap<String,ClassBuilder>();
    private RootFileReader rfr;
-   private final static Object bcel = new Object();
+   private final static Object bcelLock = new Object();
+   private NameMangler nameMangler = NameMangler.instance();
 
    RootClassLoader(RootFileReader rfr)
    {
@@ -34,6 +36,7 @@ public class RootClassLoader extends ClassLoader
       register(new Clone2Builder());
    }
 
+   @Override
    public Class findClass(String name) throws ClassNotFoundException
    {
       try
@@ -41,20 +44,13 @@ public class RootClassLoader extends ClassLoader
          if (debugRoot)
             System.out.println("RootClassLoader: loading " + name);
 
-         int pos = name.lastIndexOf('.');
-         String pkg = name.substring(0, pos);
-         ClassBuilder builder = (ClassBuilder) map.get(pkg);
-         if (builder == null)
-            throw new ClassNotFoundException(name);
-
-         String rootClassName = name.substring(pos + 1);
-         // FIXME: Do something better
-         rootClassName = rootClassName.replace("$LT$","<");
-         rootClassName = rootClassName.replace("$GT$",">");
+         String stem = nameMangler.getStemForJavaClass(name);
+         String rootClassName = nameMangler.getClassForJavaClass(name);
+         ClassBuilder builder = stemMap.get(stem);
          GenericRootClass gc = (GenericRootClass) rfr.getFactory().create(rootClassName);
          JavaClass jc;
          // BCEL is not thread safe, so class building must be synchronized
-         synchronized (bcel)
+         synchronized (bcelLock)
          {
              jc = builder.build(gc);
          }
@@ -106,11 +102,11 @@ public class RootClassLoader extends ClassLoader
 
    GenericRootClass getRootClass(Class klass)
    {
-      return (GenericRootClass) classMap.get(klass);
+      return classMap.get(klass);
    }
 
    private void register(ClassBuilder builder)
    {
-      map.put(builder.getStem(), builder);
+      stemMap.put(builder.getStem(), builder);
    }
 }

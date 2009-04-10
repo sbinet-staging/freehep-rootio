@@ -56,7 +56,7 @@ public class Clones2Builder implements ClassBuilder, Constants
       optimize = (klass.getStreamerInfo().getBits() & (1 << 12)) == 0;
       //System.out.println("bits=" + Integer.toHexString(klass.getStreamerInfo().getBits()) + " optimize=" + optimize);
 
-      String className = getStem() + "." + klass.getClassName();
+      String className = nameMangler.mangleFullClassName(getStem(),klass.getClassName());
       ClassGen cg = new ClassGen(className, "hep/io/root/core/Clones2", "<generated>", ACC_PUBLIC | ACC_SUPER, null);
       ConstantPoolGen cp = cg.getConstantPool();
       InstructionList il = new InstructionList();
@@ -138,7 +138,7 @@ branch: for (Iterator i = leaves.iterator(); i.hasNext();)
 
       // Generate the createClone method
       {
-         String cloneName = "hep.io.root.clone2." + klass.getClassName();
+         String cloneName = nameMangler.mangleFullClassName("hep.io.root.clone2",klass.getClassName());
          MethodGen mg = new MethodGen(ACC_PUBLIC, new ObjectType("hep.io.root.core.Clone2"), null, null, "createClone", className, il, cp);
          il.append((Instruction) factory.createNew(new ObjectType(cloneName)));
          il.append(InstructionConstants.DUP);

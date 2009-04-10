@@ -53,7 +53,7 @@ class ProxyBuilder implements ClassBuilder, Constants
    
    public JavaClass build(GenericRootClass klass)
    {
-      String className = nameMangler.mangleClassName(getStem(),klass.getClassName());
+      String className = nameMangler.mangleFullClassName(getStem(),klass.getClassName());
       ClassGen cg = new ClassGen(className, "hep/io/root/core/AbstractRootObject", "<generated>", ACC_PUBLIC | ACC_SUPER, new String[]
       {
          nameMangler.mangleInterfaceName(klass.getClassName())

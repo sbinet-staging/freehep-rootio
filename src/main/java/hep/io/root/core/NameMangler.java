@@ -1,13 +1,17 @@
 package hep.io.root.core;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
- * Controls name mangling when building Java interfaces for Root classes.
+ * Controls name mangling when building Java classes corresponding to Root classes.
  * @author tonyj
  * @version $Id$
  */
 public class NameMangler
 {
    private final static NameMangler theNameMangler = new NameMangler();
+   private Pattern pattern = Pattern.compile("^(hep\\.io\\.root\\.(?:\\w+))\\.(.+)$");
 
    public static NameMangler instance()
    {
@@ -15,34 +19,41 @@ public class NameMangler
    }
 
    /**
-    * Name mangling applied to root class names.
-    * By default this implementation:
-    * <ul>
-    * <li>Changes each :: to .
-    * <lI>Lowercases anything that precedes the last ::
-    * <li>Prepends hep.io.root.interfaces
-    * <ul>
+    * Given a root class name, returns the name of the corresponding java interface.
     */
-   public String mangleInterfaceName(String in)
+   public String mangleInterfaceName(String rootClassName)
    {
-      return mangleClassName("hep.io.root.interfaces",in);
+      return mangleFullClassName("hep.io.root.interfaces",rootClassName);
    }
-   String mangleClassName(String prefix, String in)
+   /**
+    * Given a full java class name, returns the corresponding root class.
+    */
+   String getClassForJavaClass(String name)
    {
-      return prefix+"."+mangleName(in);
-   }
-   String mangleName(String in)
-   {
-      for (;;)
+      Matcher matcher = pattern.matcher(name);
+      if (matcher.matches())
       {
-         int pos = in.indexOf("::");
-         if (pos < 0)
-            break;
-         in = in.substring(0, pos).toLowerCase() + "." + in.substring(pos + 2);
+         return decodeClassName(matcher.group(2));
       }
-      return escapeIllegalCharacters(in);
+      else throw new RuntimeException("Java class name "+name+" illegal for root");   }
+   /**
+    * Given a full java class name, returns the stem.
+    */
+   String getStemForJavaClass(String name)
+   {
+      Matcher matcher = pattern.matcher(name);
+      if (matcher.matches())
+      {
+         return matcher.group(1);
+      }
+      else throw new RuntimeException("Java class name "+name+" illegal for root");
    }
 
+   String mangleFullClassName(String stem, String in)
+   {
+      return stem+"."+encodeClassName(in);
+   }
+   
    /**
     * Name mangling applied to root member variables.
     * By default:
@@ -70,9 +81,16 @@ public class NameMangler
       return "get" + in;
    }
 
-   private String escapeIllegalCharacters(String in) {
+   private String encodeClassName(String in) {
       in = in.replace("<", "$LT$");
       in = in.replace(">", "$GT$");
+      in = in.replace("::", ".");
+      return in;
+   }
+   private String decodeClassName(String in) {
+      in = in.replace("$LT$","<");
+      in = in.replace("$GT$",">");
+      in = in.replace(".","::");
       return in;
    }
 }

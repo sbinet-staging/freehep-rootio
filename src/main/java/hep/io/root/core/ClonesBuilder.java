@@ -46,7 +46,7 @@ class ClonesBuilder implements ClassBuilder, Constants
       optimize = (klass.getStreamerInfo().getBits() & (1 << 12)) == 0;
       //System.out.println("bits=" + Integer.toHexString(klass.getStreamerInfo().getBits()) + " optimize=" + optimize);
 
-      String className = getStem() + "." + klass.getClassName();
+      String className = nameMangler.mangleFullClassName(getStem(),klass.getClassName());
       ClassGen cg = new ClassGen(className, "hep/io/root/core/Clones", "<generated>", ACC_PUBLIC | ACC_SUPER, null);
       ConstantPoolGen cp = cg.getConstantPool();
       InstructionList il = new InstructionList();

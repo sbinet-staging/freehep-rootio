@@ -47,13 +47,13 @@ public class GenericRootClass extends BasicRootClass
    public Class getJavaClass()
    {
       if (javaClass == null)
-         javaClass = getClass("hep.io.root.interfaces." + name);
+         javaClass = getClass(nameMangler.mangleInterfaceName(name));
       return javaClass;
    }
 
    public Type getJavaType()
    {
-      return new ObjectType("hep.io.root.interfaces." + name);
+      return new ObjectType(nameMangler.mangleInterfaceName(name));
    }
 
    public RootMember[] getMembers()
@@ -149,7 +149,7 @@ public class GenericRootClass extends BasicRootClass
    private Class getProxyClass()
    {
       if (proxyClass == null)
-         proxyClass = getClass(nameMangler.mangleClassName("hep.io.root.proxy",name));
+         proxyClass = getClass(nameMangler.mangleFullClassName("hep.io.root.proxy",name));
       return proxyClass;
    }
 }
