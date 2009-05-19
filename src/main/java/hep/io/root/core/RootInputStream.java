@@ -425,6 +425,7 @@ class RootInputStream extends DataInputStream implements RootInput
    static String readString(DataInput in) throws IOException
    {
       int l = in.readByte();
+      if (l==-1) l = in.readInt();
       byte[] data = new byte[l];
       for (int i = 0; i < l; i++)
          data[i] = in.readByte();
