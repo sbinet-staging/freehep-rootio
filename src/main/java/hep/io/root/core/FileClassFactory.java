@@ -34,10 +34,14 @@ public class FileClassFactory implements RootClassFactory
 
       for (Iterator i = tList.iterator(); i.hasNext();)
       {
-         TStreamerInfo element = (TStreamerInfo) i.next();
-         String key = element.getName();
-         StreamerInfo info = new StreamerInfoNew(element);
-         classMap.put(key, DefaultClassFactory.findClass(key, info));
+         Object element = i.next();
+         if (element instanceof TStreamerInfo)
+         {
+            TStreamerInfo si = (TStreamerInfo) element;
+            String key = si.getName();
+            StreamerInfo info = new StreamerInfoNew(si);
+            classMap.put(key, DefaultClassFactory.findClass(key, info));
+         }
       }
 
       // Now make sure we can resolve all the references

@@ -334,7 +334,7 @@ public class StreamerInfoNew extends StreamerInfo implements org.apache.bcel.Con
             case kObjectP:
                ((GenericRootClass) varClass).generateReadPointerCode(il, factory, cp);
                break;
-               
+
             case kStreamLoop:
                if (!varClass.getClassName().equals("TString"))
                {
@@ -385,7 +385,7 @@ public class StreamerInfoNew extends StreamerInfo implements org.apache.bcel.Con
                break;               
 
             default:
-               throw new RuntimeException("Unable to decode varType " + varType);
+               throw new RuntimeException("Unable to decode varType " + varType + " in class "+className);
             }
             if (varClass.getConvertMethod() != null && arrayDim == 0)
             {

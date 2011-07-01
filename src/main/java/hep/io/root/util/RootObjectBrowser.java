@@ -293,7 +293,12 @@ outer: while (iter.hasNext())
             }
          };
 
-         List streamerInfo = new ArrayList(reader.streamerInfo());
+         List streamerInfo = new ArrayList();
+         for (Iterator i = reader.streamerInfo().iterator();i.hasNext();)
+         {
+             Object o = i.next();
+             if (o instanceof TNamed) streamerInfo.add(o);
+         }
          Collections.sort(streamerInfo, sortByName);
 
          StreamerInfoBrowser browser = new StreamerInfoBrowser(streamerInfo);
