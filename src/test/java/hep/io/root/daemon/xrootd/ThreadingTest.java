@@ -23,30 +23,31 @@ public class ThreadingTest extends TestCase {
     public ThreadingTest(String testName) {
         super(testName);
     }
+    // Disabled for now since the data files are gone.
 
     public void testThread1() throws InterruptedException, ExecutionException {
-        if (!XrootdConnectionTest.isAtSLAC()) return;
-        List<TestFile> files = new ArrayList<TestFile>();
-        Random r = new Random(12345);
-        for (int i=0; i<100; i++)
-        {
-            String f = String.format("root://glast-rdr.slac.stanford.edu//glast/mc/OpsSim/opssim2-GR-v13r9p3/merit/opssim2-GR-v13r9p3-%06d-merit.root",i);
-            files.add(new TestFile(f,r.nextInt(1000000), 100, 0));
-        }
-        ExecutorService pool = Executors.newFixedThreadPool(20);
-        List<Future> results = new ArrayList<Future>();
-        for (int i=0; i<10000; i++) 
-        {
-            int n = r.nextInt(files.size());
-            results.add(pool.submit(files.get(n)));
-        }
-        pool.shutdown();
-        pool.awaitTermination(100, TimeUnit.SECONDS);
-        
-        // Check for exceptions
-        for (Future result : results) {
-            result.get();
-        }
+//        if (!XrootdConnectionTest.isAtSLAC()) return;
+//        List<TestFile> files = new ArrayList<TestFile>();
+//        Random r = new Random(12345);
+//        for (int i=0; i<100; i++)
+//        {
+//            String f = String.format("root://glast-rdr.slac.stanford.edu//glast/mc/OpsSim/opssim2-GR-v13r9p3/merit/opssim2-GR-v13r9p3-%06d-merit.root",i);
+//            files.add(new TestFile(f,r.nextInt(1000000), 100, 0));
+//        }
+//        ExecutorService pool = Executors.newFixedThreadPool(20);
+//        List<Future> results = new ArrayList<Future>();
+//        for (int i=0; i<10000; i++) 
+//        {
+//            int n = r.nextInt(files.size());
+//            results.add(pool.submit(files.get(n)));
+//        }
+//        pool.shutdown();
+//        pool.awaitTermination(100, TimeUnit.SECONDS);
+//        
+//        // Check for exceptions
+//        for (Future result : results) {
+//            result.get();
+//        }
     }
 
     class TestFile implements Runnable {
