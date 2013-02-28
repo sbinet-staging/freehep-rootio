@@ -300,7 +300,7 @@ public class SimpleConsole {
         private boolean open_read;
         @Option(name = "-u", usage = "Open for reading and writing")
         private boolean open_updt;
-        @Option(name = "-e", usage = "Update cached information on the file’s location ")
+        @Option(name = "-e", usage = "Update cached information on the file location ")
         private boolean refresh;
         @Option(name = "-p", usage = "The file is being opened for replica creation")
         private boolean replica;
