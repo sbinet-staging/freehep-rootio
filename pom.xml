@@ -3,7 +3,8 @@
     <parent>
         <artifactId>global</artifactId>
         <groupId>org.freehep</groupId>
-        <version>14</version>
+        <version>16</version>
+        <relativePath/>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.freehep</groupId>
@@ -12,6 +13,13 @@
     <packaging>jar</packaging>
     <name>FreeHEP ROOT IO</name>
     <description>FreeHEP ROOT IO Reader and Writer</description>
+    
+    <scm>
+        <url>svnFreehepRepo</url>
+        <connection>scm:svn:svn://svn.freehep.org/svn/freehep/trunk/hepio/freehep-rootio</connection>
+        <developerConnection>scm:svn:svn://svn.freehep.org/svn/freehep/trunk/hepio/freehep-rootio</developerConnection>
+    </scm>
+    
     <repositories>
         <repository>
             <id>freehep-maven</id>
@@ -141,10 +149,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <scm>
-        <connection>scm:svn:svn://svn.freehep.org/svn/freehep/tags/freehep-rootio-2.0.5</connection>
-        <developerConnection>scm:svn:svn://svn.freehep.org/svn/freehep/tags/freehep-rootio-2.0.5</developerConnection>
-    </scm>
     <properties>
         <netbeans.hint.useExternalMaven>true</netbeans.hint.useExternalMaven>
     </properties>
