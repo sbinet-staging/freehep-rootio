@@ -9,15 +9,15 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.freehep</groupId>
     <artifactId>freehep-rootio</artifactId>
-    <version>2.2.1</version>
+    <version>2.3-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>FreeHEP ROOT IO</name>
     <description>FreeHEP ROOT IO Reader and Writer</description>
     
     <scm>
-        <url>scm:svn:svn://svn.freehep.org/svn/freehep/tags/freehep-rootio-2.2.1</url>
-        <connection>scm:svn:svn://svn.freehep.org/svn/freehep/tags/freehep-rootio-2.2.1</connection>
-        <developerConnection>scm:svn:svn://svn.freehep.org/svn/freehep/tags/freehep-rootio-2.2.1</developerConnection>
+        <url>svnFreehepRepo</url>
+        <connection>scm:svn:svn://svn.freehep.org/svn/freehep/trunk/hepio/freehep-rootio</connection>
+        <developerConnection>scm:svn:svn://svn.freehep.org/svn/freehep/trunk/hepio/freehep-rootio</developerConnection>
     </scm>
     
     <repositories>
