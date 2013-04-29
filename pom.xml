@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>global</artifactId>
         <groupId>org.freehep</groupId>
-        <version>18</version>
+        <version>19</version>
         <relativePath />
     </parent>
-    <modelVersion>4.0.0</modelVersion>
+
     <groupId>org.freehep</groupId>
     <artifactId>freehep-rootio</artifactId>
     <version>2.4-SNAPSHOT</version>
     <packaging>jar</packaging>
+    
     <name>FreeHEP ROOT IO</name>
     <description>FreeHEP ROOT IO Reader and Writer</description>
     
@@ -38,6 +40,39 @@
             <url>http://jline.sourceforge.net/m2repo</url>
         </repository>
     </repositories>
+    
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.bcel</groupId>
+            <artifactId>bcel</artifactId>
+            <version>5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.freehep</groupId>
+            <artifactId>jas-plotter</artifactId>
+            <version>2.2.8</version>
+        </dependency>
+        <!-- Only used by SimpleConsole -->
+        <dependency>
+            <groupId>args4j</groupId>
+            <artifactId>args4j</artifactId>
+            <version>2.0.9</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
+            <version>0.9.94</version>
+        </dependency>
+      
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
+    </dependencies>
+    
     <build>
         <plugins>
             <plugin>
@@ -55,10 +90,9 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.0</version>
                 <configuration>
-                    <source>1.5</source>
-                    <target>1.5</target>
+                    <source>1.6</source>
+                    <target>1.6</target>
                 </configuration>
             </plugin>
         </plugins>
@@ -69,9 +103,9 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.9</version>
                 <configuration>
-                    <source>1.5</source>
+                    <source>1.6</source>
                     <links>
-                        <link>http://java.sun.com/j2se/1.5.0/docs/api/</link>
+                        <link>http://java.sun.com/j2se/1.6.0/docs/api/</link>
                     </links>
                 </configuration>
             </plugin>
@@ -122,39 +156,5 @@
             </build>
         </profile>
     </profiles>
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.bcel</groupId>
-            <artifactId>bcel</artifactId>
-            <version>5.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.freehep</groupId>
-            <artifactId>jas-plotter</artifactId>
-            <version>2.2.3</version>
-        </dependency>
-        <!-- Only used by SimpleConsole -->
-        <dependency>
-            <groupId>args4j</groupId>
-            <artifactId>args4j</artifactId>
-            <version>2.0.9</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>jline</groupId>
-            <artifactId>jline</artifactId>
-            <version>0.9.94</version>
-        </dependency>
-      
-      <!-- FIX for No Java test frameworks found in maven-surefire-plugin 2.2 -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>3.8.2</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-    <properties>
-        <netbeans.hint.useExternalMaven>true</netbeans.hint.useExternalMaven>
-    </properties>
+        
 </project>
