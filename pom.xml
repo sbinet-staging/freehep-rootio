@@ -4,7 +4,7 @@
     <parent>
         <artifactId>global</artifactId>
         <groupId>org.freehep</groupId>
-        <version>19</version>
+        <version>20.3-SNAPSHOT</version>
         <relativePath />
     </parent>
 
@@ -16,30 +16,28 @@
     <name>FreeHEP ROOT IO</name>
     <description>FreeHEP ROOT IO Reader and Writer</description>
     
+    <repositories>
+        <repository>
+            <id>freehep-maven2-public</id>
+            <name>Maven FreeHEP</name>
+            <url>http://srs.slac.stanford.edu/nexus/content/groups/freehep-maven2-public/</url>
+        </repository>
+    </repositories>
+
+    <distributionManagement>
+        <site>
+            <id>freehep-site</id>
+            <name>FreeHep Maven2 centreal site repository</name>
+            <url>dav:http://srs.slac.stanford.edu/nexus/content/sites/freehep-site/freehep-rootio</url>
+        </site>
+    </distributionManagement>
+
     <scm>
-        <url>svnFreehepRepo</url>
+        <url>http://java.freehep.org/svn/repos/freehep/list/freehep/trunk/hepio/freehep-rootio</url>
         <connection>scm:svn:svn://svn.freehep.org/svn/freehep/trunk/hepio/freehep-rootio</connection>
         <developerConnection>scm:svn:svn://svn.freehep.org/svn/freehep/trunk/hepio/freehep-rootio</developerConnection>
     </scm>
     
-    <repositories>
-        <repository>
-            <id>freehep-maven</id>
-            <name>Maven FreeHEP</name>
-            <url>http://java.freehep.org/maven2</url>
-        </repository>
-        <repository>
-            <id>maven2-repository.dev.java.net</id>
-            <name>Java.net Repository for Maven</name>
-            <url>http://download.java.net/maven/2/</url>
-            <layout>default</layout>
-        </repository>
-        <repository>
-            <id>jline</id>
-            <name>JLine Project Repository</name>
-            <url>http://jline.sourceforge.net/m2repo</url>
-        </repository>
-    </repositories>
     
     <dependencies>
         <dependency>
