@@ -510,10 +510,10 @@ class RootInputStream extends DataInputStream implements RootInput
              case ZLIB:
              case UNDEFINED:
                  boolean hasHeader = algo != ZAlgo.UNDEFINED;
-                 int nin = HDRSIZE;
                  Inflater inf = new Inflater( !hasHeader );
                  try {
-                     while (nout < decompressedSize) {
+                     // Skip the header when we have to restart
+                     for(int nin = HDRSIZE; nout < decompressedSize; nin += HDRSIZE){
                          inf.setInput( buf, nin, buf.length - nin );
                          int rc = inf.inflate( out, nout, out.length - nout );
                          if ( rc == 0 ) {
@@ -521,6 +521,7 @@ class RootInputStream extends DataInputStream implements RootInput
                          }
                          nout += rc;
                          nin += inf.getTotalIn();
+                         inf.reset();
                      }
                  } finally {
                      inf.end();
@@ -530,16 +531,17 @@ class RootInputStream extends DataInputStream implements RootInput
                  ByteArrayInputStream bufStr = new ByteArrayInputStream( buf );
                  bufStr.skip( HDRSIZE );
                  XZInputStream unc = new XZInputStream( bufStr );
-                 while (nout < decompressedSize) {
+                 try{
                      int rc = unc.read( out, nout, out.length - nout );
-                     if ( rc == 0 ) {
-                         throw new IOException( "Inflate unexpectedly returned 0 (perhaps OutOfMemory?)" );
-                     }
                      nout += rc;
+                     // Library recommendation for integrity check
+                     if( unc.read() != -1 || nout != decompressedSize){
+                         throw new IOException( "Failed to decompress all LZMA bytes." );
+                     }
                  }
-                 // Library recommendation for integrity check
-                 if(unc.read() != -1){
-                    throw new IOException( "LZMA Decompression should have returned -1 at end of stream" );
+                 finally {
+                     unc.close(); 
+                     bufStr.close();
                  }
                  break;
              default:
