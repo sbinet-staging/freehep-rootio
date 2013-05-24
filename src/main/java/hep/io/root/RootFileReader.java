@@ -40,6 +40,7 @@ public class RootFileReader implements TFile
    private String title;
    private TDirectory dir;
    private TKey streamerInfo;
+   private int fCompress;
    private int fNbytesKeys;
    private int fNbytesName;
    private long fSeekDir;
@@ -182,7 +183,7 @@ public class RootFileReader implements TFile
              fNbytesName = in.readInt();
 
              int fUnits = in.readByte();
-             int fCompress = in.readInt();
+             fCompress = in.readInt();
              fSeekInfo = in.readLong();
              int fNBytesInfo = in.readInt();             
          }
@@ -195,7 +196,7 @@ public class RootFileReader implements TFile
              fNbytesName = in.readInt();
 
              int fUnits = in.readByte();
-             int fCompress = in.readInt();
+             fCompress = in.readInt();
              fSeekInfo = in.readInt();
              int fNBytesInfo = in.readInt();
          }
@@ -362,6 +363,11 @@ public class RootFileReader implements TFile
       return name;
    }
 
+   public int getCompress()
+   {
+      return fCompress;
+   }
+   
    public int getNbytesKeys()
    {
       return fNbytesKeys;

@@ -2,6 +2,7 @@ package hep.io.root.core;
 
 import hep.io.root.RootClassNotFound;
 import hep.io.root.RootObject;
+import java.io.ByteArrayInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -10,6 +11,7 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.zip.Inflater;
+import org.tukaani.xz.XZInputStream;
 
 /**
  * An implementation of RootInput
@@ -22,8 +24,36 @@ class RootInputStream extends DataInputStream implements RootInput
    private static int kNewClassTag = 0xFFFFFFFF;
    private static int kClassMask = 0x80000000;
    private static int kMapOffset = 2;
+   private static int HDRSIZE = 9;
    private Hashtable readMap = new Hashtable();
    private RootInput top;
+   
+   public enum ZAlgo {
+       GLOBAL_SETTING,
+       ZLIB,
+       LZMA,
+       OLD,
+       UNDEFINED;
+       
+       public static ZAlgo getAlgo(int fCompress){
+           int algo = (fCompress - (fCompress % 100) ) / 100;
+           return ZAlgo.values()[algo];
+       }
+       
+       public static int getLevel(int fCompress){
+           return fCompress % 100;
+       }
+       
+       public static ZAlgo getAlgo(byte[] header){
+           if(header[0] == 'Z' && header[1] == 'L'){
+               return ZLIB;
+           }
+           if(header[0] == 'X' && header[1] == 'Z'){
+               return LZMA;
+           }
+           return UNDEFINED;
+       }
+   }
    
    public RootInputStream(RootByteArrayInputStream in, RootInput top)
    {
@@ -474,24 +504,46 @@ class RootInputStream extends DataInputStream implements RootInput
          byte[] out = new byte[decompressedSize];
       
          int nout = 0;
-         int nin = 0;
-         while (nout < decompressedSize)
-         {
-            boolean hasHeader = buf[0] == 'Z' && buf[1] == 'L';
-            Inflater inf = new Inflater(!hasHeader);
-            try
-            {
-               nin += 9;
-               inf.setInput(buf, nin, buf.length - nin);
-               int rc = inf.inflate(out, nout, out.length - nout);
-               if (rc==0) throw new IOException("Inflate unexpectedly returned 0 (perhaps OutOfMemory?)");
-               nout += rc;
-               nin += inf.getTotalIn();
-            }
-            finally
-            {
-               inf.end();
-            }
+         ZAlgo algo = ZAlgo.getAlgo( buf );
+
+         switch (algo) {
+             case ZLIB:
+             case UNDEFINED:
+                 boolean hasHeader = algo != ZAlgo.UNDEFINED;
+                 int nin = HDRSIZE;
+                 Inflater inf = new Inflater( !hasHeader );
+                 try {
+                     while (nout < decompressedSize) {
+                         inf.setInput( buf, nin, buf.length - nin );
+                         int rc = inf.inflate( out, nout, out.length - nout );
+                         if ( rc == 0 ) {
+                             throw new IOException( "Inflate unexpectedly returned 0 (perhaps OutOfMemory?)" );
+                         }
+                         nout += rc;
+                         nin += inf.getTotalIn();
+                     }
+                 } finally {
+                     inf.end();
+                 }
+                 break;
+             case LZMA:
+                 ByteArrayInputStream bufStr = new ByteArrayInputStream( buf );
+                 bufStr.skip( HDRSIZE );
+                 XZInputStream unc = new XZInputStream( bufStr );
+                 while (nout < decompressedSize) {
+                     int rc = unc.read( out, nout, out.length - nout );
+                     if ( rc == 0 ) {
+                         throw new IOException( "Inflate unexpectedly returned 0 (perhaps OutOfMemory?)" );
+                     }
+                     nout += rc;
+                 }
+                 // Library recommendation for integrity check
+                 if(unc.read() != -1){
+                    throw new IOException( "LZMA Decompression should have returned -1 at end of stream" );
+                 }
+                 break;
+             default:
+                 throw new IOException( "Unable to determine compression algorithm" );
          }
          return new RootInputStream(new RootByteArrayInputStream(out, 0), in.getTop());
       }
