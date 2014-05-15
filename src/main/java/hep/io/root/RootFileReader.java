@@ -226,7 +226,7 @@ public class RootFileReader implements TFile
          String className = in.readObject("TString").toString();
          name = in.readObject("TString").toString();
          title = in.readObject("TString").toString();
-
+                 
          in.setPosition(fBEGIN + fNbytesName); // This should get us to the directory
          dir = (TDirectory) in.readObject("TDirectory");
 

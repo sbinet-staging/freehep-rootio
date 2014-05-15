@@ -12,7 +12,7 @@ class LocateOperation extends Operation<String[]> {
      * Create the LocateOperation.
      * @param path Is the path of the file to be located.
      * @param noWait Provide information as soon as possible 
-     * @param refresh Update cached information on the file location 
+     * @param refresh Update cached information on the file's location 
      */
     LocateOperation(String path, boolean noWait, boolean refresh) {
         super("locate", new LocateMessage(path, noWait, refresh), new LocateCallback());
