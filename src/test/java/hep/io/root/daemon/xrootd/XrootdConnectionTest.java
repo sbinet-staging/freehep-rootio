@@ -123,7 +123,7 @@ public class XrootdConnectionTest extends TestCase {
 
     public void testError2() throws MalformedURLException, IOException {
 
-        URL url = new URL(null, "xroot://glast-xrootd01.slac.stanford.edu//u/gl/glast/xrootd/testdata/pawdemo.root", new XrootdStreamHandler());
+        URL url = new URL(null, "xroot://glast-xrootd01.slac.stanford.edu//u/gl/glast/xrootd/testdata/PAWdemo.root", new XrootdStreamHandler());
         URLConnection conn = url.openConnection();
         conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME, "anonymous");
         try {
