@@ -123,7 +123,7 @@ public class XrootdConnectionTest extends TestCase {
 
     public void testError2() throws MalformedURLException, IOException {
 
-        URL url = new URL(null, "xroot://glast-xrootd01.slac.stanford.edu/u/gl/glast/xrootd/testdata/PAWdemo.root", new XrootdStreamHandler());
+        URL url = new URL(null, "xroot://glast-xrootd01.slac.stanford.edu/u/gl/glast/xrootd/testdata/pawdemo.root", new XrootdStreamHandler());
         URLConnection conn = url.openConnection();
         conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME, "anonymous");
         try {
@@ -149,7 +149,7 @@ public class XrootdConnectionTest extends TestCase {
 
     public void testError3() throws MalformedURLException, IOException {
         // Host does not exist, but doesn't run rootd
-        URL url = new URL(null, "xroot://badHost.slac.stanford.edu/u/gl/glast/xrootd/testdata/PAWdemo.root", new XrootdStreamHandler());
+        URL url = new URL(null, "xroot://badHost.slac.stanford.edu/u/gl/glast/xrootd/testdata/pawdemo.root", new XrootdStreamHandler());
         URLConnection conn = url.openConnection();
         conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME, "anonymous");
         try {
@@ -162,7 +162,7 @@ public class XrootdConnectionTest extends TestCase {
 
 //    public void testError4() throws MalformedURLException, IOException {
 //        // Host exists, but doesn't run rootd
-//        URL url = new URL(null, "xroot://www.slac.stanford.edu/u/gl/glast/xrootd/testdata/PAWdemo.root", new XrootdStreamHandler());
+//        URL url = new URL(null, "xroot://www.slac.stanford.edu/u/gl/glast/xrootd/testdata/pawdemo.root", new XrootdStreamHandler());
 //        URLConnection conn = url.openConnection();
 //        conn.setRequestProperty(XrootdURLConnection.XROOT_AUTHORIZATION_SCHEME, "anonymous");
 //        try {
